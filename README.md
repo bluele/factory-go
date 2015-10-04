@@ -7,7 +7,7 @@ It can be generated easily complex objects by using this, and maitain easily tho
 ## Install
 
 ```
-$ go get -u github.com/bluele/factory-go
+$ go get -u github.com/bluele/factory-go/factory
 ```
 
 ## Usage
@@ -23,7 +23,7 @@ package main
 
 import (
   "fmt"
-  "github.com/bluele/factory-go"
+  "github.com/bluele/factory-go/factory"
 )
 
 type User struct {
@@ -68,7 +68,7 @@ package main
 import (
   "fmt"
   "github.com/Pallinder/go-randomdata"
-  "github.com/bluele/factory-go"
+  "github.com/bluele/factory-go/factory"
 )
 
 type User struct {
@@ -111,7 +111,7 @@ package main
 
 import (
   "fmt"
-  "github.com/bluele/factory-go"
+  "github.com/bluele/factory-go/factory"
 )
 
 type Group struct {
@@ -170,7 +170,7 @@ package main
 
 import (
   "fmt"
-  "github.com/bluele/factory-go"
+  "github.com/bluele/factory-go/factory"
 )
 
 type Post struct {

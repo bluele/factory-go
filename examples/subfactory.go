@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/bluele/factory-go"
+	"github.com/bluele/factory-go/factory"
 )
 
 type Group struct {
