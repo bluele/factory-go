@@ -1,5 +1,7 @@
 # factory-go
 
+[![wercker status](https://app.wercker.com/status/1331f3d73cd25c2b45f76475b40c6a9c/m/master "wercker status")](https://app.wercker.com/project/bykey/1331f3d73cd25c2b45f76475b40c6a9c)
+
 factory-go is a is a fixtures replacement inspired by factory_boy and factory_girl.
 
 It can be generated easily complex objects by using this, and maitain easily those objects generaters.
