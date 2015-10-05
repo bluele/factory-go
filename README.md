@@ -5,7 +5,7 @@
 
 factory-go is a is a fixtures replacement inspired by [factory_boy](https://github.com/rbarrois/factory_boy) and [factory_girl](https://github.com/thoughtbot/factory_girl).
 
-It can be generated easily complex objects by using this, and maitain easily those objects generaters.
+It can be generated easily complex objects by using this, and maintain easily those objects generaters.
 
 ## Install
 
