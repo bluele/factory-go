@@ -17,6 +17,12 @@ $ go get -u github.com/bluele/factory-go/factory
 
 All of the following code on [examples](https://github.com/bluele/factory-go/tree/master/examples).
 
+* [Define a simple factory](https://github.com/bluele/factory-go#define-a-simple-factory)
+* [Use factory with random yet realistic values](https://github.com/bluele/factory-go#use-factory-with-random-yet-realistic-values)
+* [Define a factory includes sub-factory](https://github.com/bluele/factory-go#define-a-factory-includes-sub-factory)
+* [Define a factory includes a slice for sub-factory](https://github.com/bluele/factory-go#define-a-factory-includes-a-slice-for-sub-factory)
+* [Define a factory includes sub-factory that contains self-reference](https://github.com/bluele/factory-go#define-a-factory-includes-sub-factory-that-contains-self-reference)
+
 ### Define a simple factory
 
 Declare an factory has a set of simple attribute, and generate a fixture object.
@@ -233,7 +239,7 @@ ID: 3  Name: user-3
         Post.ID: 9  Post.Content: post-9
 ```
 
-# Define a factory includes sub-factory that contains self-reference.
+### Define a factory includes sub-factory that contains self-reference.
 
 ```go
 package main
