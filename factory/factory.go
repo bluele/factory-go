@@ -22,6 +22,7 @@ type Factory struct {
 
 type Args interface {
 	Instance() interface{}
+	Parent() Args
 	pipeline(int) *Pipeline
 }
 
@@ -32,6 +33,10 @@ type argsStruct struct {
 
 func (args *argsStruct) Instance() interface{} {
 	return args.rv.Interface()
+}
+
+func (args *argsStruct) Parent() Args {
+	return args.pl.parent
 }
 
 func (args *argsStruct) pipeline(num int) *Pipeline {
@@ -73,14 +78,16 @@ func (st *Stacks) Has(idx int) bool {
 
 type Pipeline struct {
 	stacks Stacks
+	parent Args
 }
 
 func NewPipeline(size int) *Pipeline {
 	return &Pipeline{stacks: make(Stacks, size)}
 }
 
-func (pl *Pipeline) Copy() *Pipeline {
+func (pl *Pipeline) Next(args Args) *Pipeline {
 	npl := &Pipeline{}
+	npl.parent = args
 	npl.stacks = make(Stacks, len(pl.stacks))
 	for i, sptr := range pl.stacks {
 		if sptr != nil {
@@ -170,7 +177,12 @@ func (fa *Factory) SeqString(name string, gen func(string) (interface{}, error))
 func (fa *Factory) SubFactory(name string, sub *Factory) *Factory {
 	idx := fa.checkIdx(name)
 	fa.attrGens[idx].genFunc = func(args Args) (interface{}, error) {
-		return sub.Create()
+		pipeline := args.pipeline(fa.numField)
+		ret, err := sub.create(nil, pipeline.Next(args))
+		if err != nil {
+			return nil, err
+		}
+		return ret, nil
 	}
 	return fa
 }
@@ -180,9 +192,13 @@ func (fa *Factory) SubSliceFactory(name string, sub *Factory, getSize func() int
 	tp := fa.rt.Field(idx).Type
 	fa.attrGens[idx].genFunc = func(args Args) (interface{}, error) {
 		size := getSize()
+		pipeline := args.pipeline(fa.numField)
 		sv := reflect.MakeSlice(tp, size, size)
 		for i := 0; i < size; i++ {
-			ret := sub.MustCreate()
+			ret, err := sub.create(nil, pipeline.Next(args))
+			if err != nil {
+				return nil, err
+			}
 			sv.Index(i).Set(reflect.ValueOf(ret))
 		}
 		return sv.Interface(), nil
@@ -198,7 +214,7 @@ func (fa *Factory) SubRecursiveFactory(name string, sub *Factory, getLimit func(
 			pipeline.stacks.Set(idx, getLimit())
 		}
 		if pipeline.stacks.Next(idx) {
-			ret, err := sub.create(nil, pipeline.Copy())
+			ret, err := sub.create(nil, pipeline.Next(args))
 			if err != nil {
 				return nil, err
 			}
@@ -221,7 +237,7 @@ func (fa *Factory) SubRecursiveSliceFactory(name string, sub *Factory, getSize, 
 			size := getSize()
 			sv := reflect.MakeSlice(tp, size, size)
 			for i := 0; i < size; i++ {
-				ret, err := sub.create(nil, pipeline.Copy())
+				ret, err := sub.create(nil, pipeline.Next(args))
 				if err != nil {
 					return nil, err
 				}

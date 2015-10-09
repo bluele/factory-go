@@ -22,6 +22,7 @@ All of the following code on [examples](https://github.com/bluele/factory-go/tre
 * [Define a factory includes sub-factory](https://github.com/bluele/factory-go#define-a-factory-includes-sub-factory)
 * [Define a factory includes a slice for sub-factory](https://github.com/bluele/factory-go#define-a-factory-includes-a-slice-for-sub-factory)
 * [Define a factory includes sub-factory that contains self-reference](https://github.com/bluele/factory-go#define-a-factory-includes-sub-factory-that-contains-self-reference)
+* [Define a sub-factory refers to parent factory](https://github.com/bluele/factory-go#define-a-sub-factory-refers-to-parent-factory)
 
 ### Define a simple factory
 
@@ -281,6 +282,69 @@ Output:
 ```
 ID: 1  Name: Mia Williams  CloseFriend.ID: 2  CloseFriend.Name: Joseph Wilson
 &{3 Liam Wilson <nil>} <nil>
+```
+
+### Define a sub-factory refers to parent factory
+
+```go
+package main
+
+import (
+  "fmt"
+  "github.com/bluele/factory-go/factory"
+)
+
+type User struct {
+  ID    int
+  Name  string
+  Group *Group
+}
+
+type Group struct {
+  ID    int
+  Name  string
+  Users []*User
+}
+
+var UserFactory = factory.NewFactory(
+  &User{},
+).SeqInt("ID", func(n int) (interface{}, error) {
+  return n, nil
+}).Attr("Name", func(args factory.Args) (interface{}, error) {
+  user := args.Instance().(*User)
+  return fmt.Sprintf("user-%d", user.ID), nil
+}).Attr("Group", func(args factory.Args) (interface{}, error) {
+  if parent := args.Parent(); parent != nil {
+    // if args have parent, use it.
+    return parent.Instance(), nil
+  }
+  return nil, nil
+})
+
+var GroupFactory = factory.NewFactory(
+  &Group{},
+).SeqInt("ID", func(n int) (interface{}, error) {
+  return 2 - n%2, nil
+}).Attr("Name", func(args factory.Args) (interface{}, error) {
+  group := args.Instance().(*Group)
+  return fmt.Sprintf("group-%d", group.ID), nil
+}).SubSliceFactory("Users", UserFactory, func() int { return 3 })
+
+func main() {
+  group := GroupFactory.MustCreate().(*Group)
+  fmt.Println("Group.ID:", group.ID)
+  for _, user := range group.Users {
+    fmt.Println("\tUser.ID:", user.ID, " User.Name:", user.Name, " User.Group.ID:", user.Group.ID)
+  }
+}
+```
+
+Output:
+```
+Group.ID: 1
+        User.ID: 1  User.Name: user-1  User.Group.ID: 1
+        User.ID: 2  User.Name: user-2  User.Group.ID: 1
+        User.ID: 3  User.Name: user-3  User.Group.ID: 1
 ```
 
 # Author
