@@ -177,3 +177,44 @@ func TestSubRecursiveFactory(t *testing.T) {
 		return
 	}
 }
+
+func TestFactoryConstruction(t *testing.T) {
+	type User struct {
+		ID   int
+		Name string
+	}
+
+	var userFactory = NewFactory(&User{}).
+		SeqInt("ID", func(n int) (interface{}, error) {
+		return n, nil
+	}).
+		Attr("Name", func(args Args) (interface{}, error) {
+		return "bluele", nil
+	})
+
+	var user *User
+
+	user = &User{}
+	if err := userFactory.Construct(user); err != nil {
+		t.Error(err)
+		return
+	}
+	if user.ID == 0 {
+		t.Error("user.ID should not be 0.")
+	}
+	if user.Name == "" {
+		t.Error("user.ID should not be empty.")
+	}
+
+	user = &User{}
+	if err := userFactory.ConstructWithOption(user, map[string]interface{}{"Name": "jun"}); err != nil {
+		t.Error(err)
+		return
+	}
+	if user.ID == 0 {
+		t.Error("user.ID should not be 0.")
+	}
+	if user.Name == "" {
+		t.Error("user.ID should not be empty.")
+	}
+}

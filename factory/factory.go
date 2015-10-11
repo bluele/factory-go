@@ -1,6 +1,7 @@
 package factory
 
 import (
+	"errors"
 	"reflect"
 	"strconv"
 	"sync/atomic"
@@ -148,6 +149,10 @@ func (fa *Factory) init() {
 	fa.rv = &rv
 }
 
+func (fa *Factory) modelName() string {
+	return fa.rt.Name()
+}
+
 func (fa *Factory) Attr(name string, gen func(Args) (interface{}, error)) *Factory {
 	idx := fa.checkIdx(name)
 	fa.attrGens[idx].genFunc = gen
@@ -278,16 +283,44 @@ func (fa *Factory) MustCreateWithOption(opt map[string]interface{}) interface{} 
 	return inst
 }
 
-func (fa *Factory) create(opt map[string]interface{}, pl *Pipeline) (interface{}, error) {
-	inst := reflect.New(fa.rt).Elem()
+/*
+Bind values of a new objects to a pointer to struct.
 
+ptr: a pointer to struct
+*/
+func (fa *Factory) Construct(ptr interface{}) error {
+	return fa.ConstructWithOption(ptr, nil)
+}
+
+/*
+Bind values of a new objects to a pointer to struct with option.
+
+ptr: a pointer to struct
+opt: attibute values
+*/
+func (fa *Factory) ConstructWithOption(ptr interface{}, opt map[string]interface{}) error {
+	pt := reflect.TypeOf(ptr)
+	if pt.Kind() != reflect.Ptr {
+		return errors.New("ptr should be pointer type.")
+	}
+	pt = pt.Elem()
+	if pt.Name() != fa.modelName() {
+		return errors.New("ptr type should be " + fa.modelName())
+	}
+
+	inst := reflect.ValueOf(ptr).Elem()
+	_, err := fa.build(&inst, opt, nil)
+	return err
+}
+
+func (fa *Factory) build(inst *reflect.Value, opt map[string]interface{}, pl *Pipeline) (interface{}, error) {
 	args := &argsStruct{}
 	args.pl = pl
 	if fa.isPtr {
-		addr := inst.Addr()
+		addr := (*inst).Addr()
 		args.rv = &addr
 	} else {
-		args.rv = &inst
+		args.rv = inst
 	}
 
 	for i := 0; i < fa.numField; i++ {
@@ -312,8 +345,12 @@ func (fa *Factory) create(opt map[string]interface{}, pl *Pipeline) (interface{}
 	}
 
 	if fa.isPtr {
-		inst = inst.Addr()
+		return (*inst).Addr().Interface(), nil
 	}
-
 	return inst.Interface(), nil
+}
+
+func (fa *Factory) create(opt map[string]interface{}, pl *Pipeline) (interface{}, error) {
+	inst := reflect.New(fa.rt).Elem()
+	return fa.build(&inst, opt, pl)
 }
