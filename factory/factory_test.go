@@ -6,18 +6,19 @@ import (
 
 func TestFactory(t *testing.T) {
 	type User struct {
-		ID       int
-		Name     string
-		Location string
+		ID         int
+		Name       string
+		Location   string
+		unexported string
 	}
 
 	userFactory := NewFactory(&User{Location: "Tokyo"}).
 		SeqInt("ID", func(n int) (interface{}, error) {
-		return n, nil
-	}).
+			return n, nil
+		}).
 		Attr("Name", func(args Args) (interface{}, error) {
-		return "bluele", nil
-	})
+			return "bluele", nil
+		})
 
 	iuser, err := userFactory.Create()
 	if err != nil {
@@ -54,16 +55,16 @@ func TestSubFactory(t *testing.T) {
 
 	groupFactory := NewFactory(&Group{}).
 		SeqInt("ID", func(n int) (interface{}, error) {
-		return n, nil
-	})
+			return n, nil
+		})
 
 	userFactory := NewFactory(&User{}).
 		SeqInt("ID", func(n int) (interface{}, error) {
-		return n, nil
-	}).
+			return n, nil
+		}).
 		Attr("Name", func(args Args) (interface{}, error) {
-		return "bluele", nil
-	}).
+			return "bluele", nil
+		}).
 		SubFactory("Group", groupFactory)
 
 	iuser, err := userFactory.Create()
@@ -99,16 +100,16 @@ func TestSubSliceFactory(t *testing.T) {
 
 	groupFactory := NewFactory(&Group{}).
 		SeqInt("ID", func(n int) (interface{}, error) {
-		return n, nil
-	})
+			return n, nil
+		})
 
 	userFactory := NewFactory(&User{}).
 		SeqInt("ID", func(n int) (interface{}, error) {
-		return n, nil
-	}).
+			return n, nil
+		}).
 		Attr("Name", func(args Args) (interface{}, error) {
-		return "bluele", nil
-	}).
+			return "bluele", nil
+		}).
 		SubSliceFactory("Groups", groupFactory, func() int { return 3 })
 
 	iuser, err := userFactory.Create()
@@ -149,11 +150,11 @@ func TestSubRecursiveFactory(t *testing.T) {
 	var userFactory = NewFactory(&User{})
 	userFactory.
 		SeqInt("ID", func(n int) (interface{}, error) {
-		return n, nil
-	}).
+			return n, nil
+		}).
 		Attr("Name", func(args Args) (interface{}, error) {
-		return "bluele", nil
-	}).
+			return "bluele", nil
+		}).
 		SubRecursiveFactory("Friend", userFactory, func() int { return 2 })
 
 	iuser, err := userFactory.Create()
@@ -186,11 +187,11 @@ func TestFactoryConstruction(t *testing.T) {
 
 	var userFactory = NewFactory(&User{}).
 		SeqInt("ID", func(n int) (interface{}, error) {
-		return n, nil
-	}).
+			return n, nil
+		}).
 		Attr("Name", func(args Args) (interface{}, error) {
-		return "bluele", nil
-	})
+			return "bluele", nil
+		})
 
 	var user *User
 
