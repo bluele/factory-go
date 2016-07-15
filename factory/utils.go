@@ -11,4 +11,3 @@ func getAttrName(sf reflect.StructField, tagName string) string {
 	}
 	return sf.Name
 }
-
