@@ -133,7 +133,7 @@ func (fa *Factory) init() {
 		vf := rv.Field(i)
 		ag := &attrGenerator{}
 
-		if tf.Type.Kind() == reflect.Ptr && vf.IsNil() {
+		if !vf.CanSet() || (tf.Type.Kind() == reflect.Ptr && vf.IsNil()) {
 			ag.isNil = true
 		} else {
 			ag.value = vf.Interface()
