@@ -43,6 +43,33 @@ func TestFactory(t *testing.T) {
 	}
 }
 
+func TestMapAttrFactory(t *testing.T) {
+	type User struct {
+		ID  int
+		Ext map[string]string
+	}
+	var userFactory = NewFactory(&User{}).
+		SeqInt("ID", func(n int) (interface{}, error) {
+			return n, nil
+		}).
+		Attr("Ext", func(args Args) (interface{}, error) {
+			return map[string]string{"test": "ok"}, nil
+		})
+	user := &User{}
+	if err := userFactory.Construct(user); err != nil {
+		t.Error(err)
+		return
+	}
+	if user.ID == 0 {
+		t.Error("user.ID should not be 0.")
+	}
+	if v, ok := user.Ext["test"]; !ok {
+		t.Error("user.Ext[\"test\"] should not be empty.")
+	} else if v != "ok" {
+		t.Error("user.Ext[\"test\"] should be ok.")
+	}
+}
+
 func TestSubFactory(t *testing.T) {
 	type Group struct {
 		ID int
