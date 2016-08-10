@@ -347,6 +347,12 @@ Group.ID: 1
         User.ID: 3  User.Name: user-3  User.Group.ID: 1
 ```
 
+## Persistent models
+
+Currently this project has no support for directly integration with ORM like [gorm](https://github.com/jinzhu/gorm), so you need to do manually.
+
+Here is an example: https://gist.github.com/bluele/7babe26567785a198bb0bd813543ca86
+
 # Author
 
 **Jun Kimura**
