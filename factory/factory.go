@@ -24,12 +24,12 @@ type Factory struct {
 type Args interface {
 	Instance() interface{}
 	Parent() Args
-	pipeline(int) *Pipeline
+	pipeline(int) *pipeline
 }
 
 type argsStruct struct {
 	rv *reflect.Value
-	pl *Pipeline
+	pl *pipeline
 }
 
 func (args *argsStruct) Instance() interface{} {
@@ -40,9 +40,9 @@ func (args *argsStruct) Parent() Args {
 	return args.pl.parent
 }
 
-func (args *argsStruct) pipeline(num int) *Pipeline {
+func (args *argsStruct) pipeline(num int) *pipeline {
 	if args.pl == nil {
-		return NewPipeline(num)
+		return newPipeline(num)
 	}
 	return args.pl
 }
@@ -77,17 +77,17 @@ func (st *Stacks) Has(idx int) bool {
 	return (*st)[idx] != nil
 }
 
-type Pipeline struct {
+type pipeline struct {
 	stacks Stacks
 	parent Args
 }
 
-func NewPipeline(size int) *Pipeline {
-	return &Pipeline{stacks: make(Stacks, size)}
+func newPipeline(size int) *pipeline {
+	return &pipeline{stacks: make(Stacks, size)}
 }
 
-func (pl *Pipeline) Next(args Args) *Pipeline {
-	npl := &Pipeline{}
+func (pl *pipeline) Next(args Args) *pipeline {
+	npl := &pipeline{}
 	npl.parent = args
 	npl.stacks = make(Stacks, len(pl.stacks))
 	for i, sptr := range pl.stacks {
@@ -214,12 +214,12 @@ func (fa *Factory) SubSliceFactory(name string, sub *Factory, getSize func() int
 func (fa *Factory) SubRecursiveFactory(name string, sub *Factory, getLimit func() int) *Factory {
 	idx := fa.checkIdx(name)
 	fa.attrGens[idx].genFunc = func(args Args) (interface{}, error) {
-		pipeline := args.pipeline(fa.numField)
-		if !pipeline.stacks.Has(idx) {
-			pipeline.stacks.Set(idx, getLimit())
+		pl := args.pipeline(fa.numField)
+		if !pl.stacks.Has(idx) {
+			pl.stacks.Set(idx, getLimit())
 		}
-		if pipeline.stacks.Next(idx) {
-			ret, err := sub.create(nil, pipeline.Next(args))
+		if pl.stacks.Next(idx) {
+			ret, err := sub.create(nil, pl.Next(args))
 			if err != nil {
 				return nil, err
 			}
@@ -234,15 +234,15 @@ func (fa *Factory) SubRecursiveSliceFactory(name string, sub *Factory, getSize, 
 	idx := fa.checkIdx(name)
 	tp := fa.rt.Field(idx).Type
 	fa.attrGens[idx].genFunc = func(args Args) (interface{}, error) {
-		pipeline := args.pipeline(fa.numField)
-		if !pipeline.stacks.Has(idx) {
-			pipeline.stacks.Set(idx, getLimit())
+		pl := args.pipeline(fa.numField)
+		if !pl.stacks.Has(idx) {
+			pl.stacks.Set(idx, getLimit())
 		}
-		if pipeline.stacks.Next(idx) {
+		if pl.stacks.Next(idx) {
 			size := getSize()
 			sv := reflect.MakeSlice(tp, size, size)
 			for i := 0; i < size; i++ {
-				ret, err := sub.create(nil, pipeline.Next(args))
+				ret, err := sub.create(nil, pl.Next(args))
 				if err != nil {
 					return nil, err
 				}
@@ -313,7 +313,7 @@ func (fa *Factory) ConstructWithOption(ptr interface{}, opt map[string]interface
 	return err
 }
 
-func (fa *Factory) build(inst *reflect.Value, opt map[string]interface{}, pl *Pipeline) (interface{}, error) {
+func (fa *Factory) build(inst *reflect.Value, opt map[string]interface{}, pl *pipeline) (interface{}, error) {
 	args := &argsStruct{}
 	args.pl = pl
 	if fa.isPtr {
@@ -350,7 +350,7 @@ func (fa *Factory) build(inst *reflect.Value, opt map[string]interface{}, pl *Pi
 	return inst.Interface(), nil
 }
 
-func (fa *Factory) create(opt map[string]interface{}, pl *Pipeline) (interface{}, error) {
+func (fa *Factory) create(opt map[string]interface{}, pl *pipeline) (interface{}, error) {
 	inst := reflect.New(fa.rt).Elem()
 	return fa.build(&inst, opt, pl)
 }
