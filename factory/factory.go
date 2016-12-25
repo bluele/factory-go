@@ -32,10 +32,12 @@ type argsStruct struct {
 	pl *pipeline
 }
 
+// Instance returns a object to which the generator declared just before is applied
 func (args *argsStruct) Instance() interface{} {
 	return args.rv.Interface()
 }
 
+// Parent returns a parent argument if current factory is a subfactory of parent
 func (args *argsStruct) Parent() Args {
 	return args.pl.parent
 }
@@ -99,6 +101,8 @@ func (pl *pipeline) Next(args Args) *pipeline {
 	return npl
 }
 
+// NewFactory returns a new factory for specified model class
+// Each generator is applied in the order in which they are declared
 func NewFactory(model interface{}) *Factory {
 	fa := &Factory{}
 	fa.model = model
