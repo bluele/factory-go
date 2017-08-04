@@ -39,6 +39,9 @@ func (args *argsStruct) Instance() interface{} {
 
 // Parent returns a parent argument if current factory is a subfactory of parent
 func (args *argsStruct) Parent() Args {
+	if args.pl == nil {
+		return nil
+	}
 	return args.pl.parent
 }
 

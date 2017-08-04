@@ -246,3 +246,26 @@ func TestFactoryConstruction(t *testing.T) {
 		t.Error("user.ID should not be empty.")
 	}
 }
+
+func TestFactoryWhenCallArgsParent(t *testing.T) {
+	type User struct {
+		Name      string
+		GroupUUID string
+	}
+
+	var userFactory = NewFactory(&User{})
+	userFactory.
+		Attr("Name", func(args Args) (interface{}, error) {
+			if parent := args.Parent(); parent != nil {
+				if pUser, ok := parent.Instance().(*User); ok {
+					return pUser.GroupUUID, nil
+				}
+			}
+			return "", nil
+		})
+
+	if err := userFactory.Construct(&User{}); err != nil {
+		t.Error(err)
+		return
+	}
+}
