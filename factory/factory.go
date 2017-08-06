@@ -8,7 +8,8 @@ import (
 )
 
 var (
-	TagName = "factory"
+	TagName    = "factory"
+	emptyValue = reflect.Value{}
 )
 
 type Factory struct {
@@ -316,11 +317,11 @@ func (fa *Factory) ConstructWithOption(ptr interface{}, opt map[string]interface
 	}
 
 	inst := reflect.ValueOf(ptr).Elem()
-	_, err := fa.build(&inst, opt, nil)
+	_, err := fa.build(&inst, pt, opt, nil)
 	return err
 }
 
-func (fa *Factory) build(inst *reflect.Value, opt map[string]interface{}, pl *pipeline) (interface{}, error) {
+func (fa *Factory) build(inst *reflect.Value, tp reflect.Type, opt map[string]interface{}, pl *pipeline) (interface{}, error) {
 	args := &argsStruct{}
 	args.pl = pl
 	if fa.isPtr {
@@ -351,6 +352,10 @@ func (fa *Factory) build(inst *reflect.Value, opt map[string]interface{}, pl *pi
 		}
 	}
 
+	for k, v := range opt {
+		setValueWithAttrPath(inst, tp, k, v)
+	}
+
 	if fa.isPtr {
 		return (*inst).Addr().Interface(), nil
 	}
@@ -359,5 +364,5 @@ func (fa *Factory) build(inst *reflect.Value, opt map[string]interface{}, pl *pi
 
 func (fa *Factory) create(opt map[string]interface{}, pl *pipeline) (interface{}, error) {
 	inst := reflect.New(fa.rt).Elem()
-	return fa.build(&inst, opt, pl)
+	return fa.build(&inst, fa.rt, opt, pl)
 }

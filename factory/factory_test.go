@@ -269,3 +269,41 @@ func TestFactoryWhenCallArgsParent(t *testing.T) {
 		return
 	}
 }
+
+func TestFactoryWithOptions(t *testing.T) {
+	type (
+		Group struct {
+			Name string
+		}
+		User struct {
+			ID     int
+			Name   string
+			Group1 Group
+			Group2 *Group
+		}
+	)
+
+	var userFactory = NewFactory(&User{})
+	user := userFactory.MustCreateWithOption(map[string]interface{}{
+		"ID":          1,
+		"Name":        "bluele",
+		"Group1.Name": "programmer",
+		"Group2.Name": "web",
+	}).(*User)
+
+	if user.ID != 1 {
+		t.Errorf("user.ID should be 1, not %v", user.ID)
+	}
+
+	if user.Name != "bluele" {
+		t.Errorf("user.Name should be bluele, not %v", user.Name)
+	}
+
+	if user.Group1.Name != "programmer" {
+		t.Errorf("user.Group1.Name should be programmer, not %v", user.Group1.Name)
+	}
+
+	if user.Group2.Name != "web" {
+		t.Errorf("user.Group2.Name should be web, not %v", user.Group2.Name)
+	}
+}
