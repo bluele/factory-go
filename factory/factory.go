@@ -20,7 +20,7 @@ type Factory struct {
 	attrGens     []*attrGenerator
 	nameIndexMap map[string]int // pair for attribute name and field index.
 	isPtr        bool
-	onCreated    func(Args) error
+	onCreate     func(Args) error
 }
 
 type Args interface {
@@ -264,9 +264,10 @@ func (fa *Factory) SubRecursiveSliceFactory(name string, sub *Factory, getSize, 
 	return fa
 }
 
-// OnCreated registers a callback on object creation
-func (fa *Factory) OnCreated(cb func(Args) error) *Factory {
-	fa.onCreated = cb
+// OnCreate registers a callback on object creation.
+// If callback function returns error, object creation is failed.
+func (fa *Factory) OnCreate(cb func(Args) error) *Factory {
+	fa.onCreate = cb
 	return fa
 }
 
@@ -363,8 +364,8 @@ func (fa *Factory) build(inst *reflect.Value, tp reflect.Type, opt map[string]in
 		setValueWithAttrPath(inst, tp, k, v)
 	}
 
-	if fa.onCreated != nil {
-		if err := fa.onCreated(args); err != nil {
+	if fa.onCreate != nil {
+		if err := fa.onCreate(args); err != nil {
 			return nil, err
 		}
 	}
