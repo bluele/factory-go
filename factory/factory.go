@@ -1,6 +1,7 @@
 package factory
 
 import (
+	"context"
 	"errors"
 	"reflect"
 	"strconv"
@@ -26,12 +27,14 @@ type Factory struct {
 type Args interface {
 	Instance() interface{}
 	Parent() Args
+	Context() context.Context
 	pipeline(int) *pipeline
 }
 
 type argsStruct struct {
-	rv *reflect.Value
-	pl *pipeline
+	ctx context.Context
+	rv  *reflect.Value
+	pl  *pipeline
 }
 
 // Instance returns a object to which the generator declared just before is applied
@@ -52,6 +55,14 @@ func (args *argsStruct) pipeline(num int) *pipeline {
 		return newPipeline(num)
 	}
 	return args.pl
+}
+
+func (args *argsStruct) Context() context.Context {
+	return args.ctx
+}
+
+func (args *argsStruct) UpdateContext(ctx context.Context) {
+	args.ctx = ctx
 }
 
 type Stacks []*int64
@@ -192,7 +203,7 @@ func (fa *Factory) SubFactory(name string, sub *Factory) *Factory {
 	idx := fa.checkIdx(name)
 	fa.attrGens[idx].genFunc = func(args Args) (interface{}, error) {
 		pipeline := args.pipeline(fa.numField)
-		ret, err := sub.create(nil, pipeline.Next(args))
+		ret, err := sub.create(args.Context(), nil, pipeline.Next(args))
 		if err != nil {
 			return nil, err
 		}
@@ -209,7 +220,7 @@ func (fa *Factory) SubSliceFactory(name string, sub *Factory, getSize func() int
 		pipeline := args.pipeline(fa.numField)
 		sv := reflect.MakeSlice(tp, size, size)
 		for i := 0; i < size; i++ {
-			ret, err := sub.create(nil, pipeline.Next(args))
+			ret, err := sub.create(args.Context(), nil, pipeline.Next(args))
 			if err != nil {
 				return nil, err
 			}
@@ -228,7 +239,7 @@ func (fa *Factory) SubRecursiveFactory(name string, sub *Factory, getLimit func(
 			pl.stacks.Set(idx, getLimit())
 		}
 		if pl.stacks.Next(idx) {
-			ret, err := sub.create(nil, pl.Next(args))
+			ret, err := sub.create(args.Context(), nil, pl.Next(args))
 			if err != nil {
 				return nil, err
 			}
@@ -251,7 +262,7 @@ func (fa *Factory) SubRecursiveSliceFactory(name string, sub *Factory, getSize, 
 			size := getSize()
 			sv := reflect.MakeSlice(tp, size, size)
 			for i := 0; i < size; i++ {
-				ret, err := sub.create(nil, pl.Next(args))
+				ret, err := sub.create(args.Context(), nil, pl.Next(args))
 				if err != nil {
 					return nil, err
 				}
@@ -284,7 +295,15 @@ func (fa *Factory) Create() (interface{}, error) {
 }
 
 func (fa *Factory) CreateWithOption(opt map[string]interface{}) (interface{}, error) {
-	return fa.create(opt, nil)
+	return fa.create(context.Background(), opt, nil)
+}
+
+func (fa *Factory) CreateWithContext(ctx context.Context) (interface{}, error) {
+	return fa.create(ctx, nil, nil)
+}
+
+func (fa *Factory) CreateWithContextAndOption(ctx context.Context, opt map[string]interface{}) (interface{}, error) {
+	return fa.create(ctx, opt, nil)
 }
 
 func (fa *Factory) MustCreate() interface{} {
@@ -315,6 +334,17 @@ ptr: a pointer to struct
 opt: attibute values
 */
 func (fa *Factory) ConstructWithOption(ptr interface{}, opt map[string]interface{}) error {
+	return fa.ConstructWithContextAndOption(context.Background(), ptr, opt)
+}
+
+/*
+Bind values of a new objects to a pointer to struct with context and option.
+
+ctx: context object
+ptr: a pointer to struct
+opt: attibute values
+*/
+func (fa *Factory) ConstructWithContextAndOption(ctx context.Context, ptr interface{}, opt map[string]interface{}) error {
 	pt := reflect.TypeOf(ptr)
 	if pt.Kind() != reflect.Ptr {
 		return errors.New("ptr should be pointer type.")
@@ -325,13 +355,14 @@ func (fa *Factory) ConstructWithOption(ptr interface{}, opt map[string]interface
 	}
 
 	inst := reflect.ValueOf(ptr).Elem()
-	_, err := fa.build(&inst, pt, opt, nil)
+	_, err := fa.build(ctx, &inst, pt, opt, nil)
 	return err
 }
 
-func (fa *Factory) build(inst *reflect.Value, tp reflect.Type, opt map[string]interface{}, pl *pipeline) (interface{}, error) {
+func (fa *Factory) build(ctx context.Context, inst *reflect.Value, tp reflect.Type, opt map[string]interface{}, pl *pipeline) (interface{}, error) {
 	args := &argsStruct{}
 	args.pl = pl
+	args.ctx = ctx
 	if fa.isPtr {
 		addr := (*inst).Addr()
 		args.rv = &addr
@@ -376,7 +407,7 @@ func (fa *Factory) build(inst *reflect.Value, tp reflect.Type, opt map[string]in
 	return inst.Interface(), nil
 }
 
-func (fa *Factory) create(opt map[string]interface{}, pl *pipeline) (interface{}, error) {
+func (fa *Factory) create(ctx context.Context, opt map[string]interface{}, pl *pipeline) (interface{}, error) {
 	inst := reflect.New(fa.rt).Elem()
-	return fa.build(&inst, fa.rt, opt, pl)
+	return fa.build(ctx, &inst, fa.rt, opt, pl)
 }
