@@ -1,4 +1,4 @@
-box: google/golang
+box: golang
 
 build:
   steps:
@@ -10,5 +10,5 @@ build:
     - script:
         name: go test
         code: |
-          cd $WERCKER_SOURCE_DIR/factory
-          go test
+          cd $WERCKER_SOURCE_DIR
+          go test -v ./factory
