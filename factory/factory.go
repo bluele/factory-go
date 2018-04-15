@@ -285,7 +285,7 @@ func (fa *Factory) OnCreate(cb func(Args) error) *Factory {
 func (fa *Factory) checkIdx(name string) int {
 	idx, ok := fa.nameIndexMap[name]
 	if !ok {
-		panic("No such atrribute name: " + name)
+		panic("No such attribute name: " + name)
 	}
 	return idx
 }
