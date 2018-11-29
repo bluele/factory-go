@@ -181,20 +181,20 @@ func (fa *Factory) Attr(name string, gen func(Args) (interface{}, error)) *Facto
 
 func (fa *Factory) SeqInt(name string, gen func(int) (interface{}, error)) *Factory {
 	idx := fa.checkIdx(name)
-	var seq int64 = 1
+	var seq int64 = 0
 	fa.attrGens[idx].genFunc = func(args Args) (interface{}, error) {
-		defer atomic.AddInt64(&seq, 1)
-		return gen(int(seq))
+		new := atomic.AddInt64(&seq, 1)
+		return gen(int(new))
 	}
 	return fa
 }
 
 func (fa *Factory) SeqString(name string, gen func(string) (interface{}, error)) *Factory {
 	idx := fa.checkIdx(name)
-	var seq int64 = 1
+	var seq int64 = 0
 	fa.attrGens[idx].genFunc = func(args Args) (interface{}, error) {
-		defer atomic.AddInt64(&seq, 1)
-		return gen(strconv.FormatInt(seq, 10))
+		new := atomic.AddInt64(&seq, 1)
+		return gen(strconv.FormatInt(new, 10))
 	}
 	return fa
 }
