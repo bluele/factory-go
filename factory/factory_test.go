@@ -1,6 +1,7 @@
 package factory
 
 import (
+	"sync"
 	"testing"
 )
 
@@ -305,5 +306,97 @@ func TestFactoryWithOptions(t *testing.T) {
 
 	if user.Group2.Name != "web" {
 		t.Errorf("user.Group2.Name should be web, not %v", user.Group2.Name)
+	}
+}
+
+func TestFactorySeqConcurrency(t *testing.T) {
+	type User struct {
+		ID   int
+		Name string
+	}
+
+	var userFactory = NewFactory(&User{}).
+		SeqInt("ID", func(n int) (interface{}, error) {
+			return n, nil
+		}).
+		SeqString("Name", func(s string) (interface{}, error) {
+			return "user-" + s, nil
+		})
+
+	var wg sync.WaitGroup
+	users := make([]*User, 1000)
+
+	// Concurrently construct many different Users
+	for i := range users {
+		i := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			user, err := userFactory.Create()
+			if err != nil {
+				t.Errorf("constructing a User shouldn't have failed: %v", err)
+			} else {
+				users[i] = user.(*User)
+			}
+		}()
+	}
+	wg.Wait()
+
+	// Check that each ID and Name value is unique
+	ids := make(map[int]bool)
+	names := make(map[string]bool)
+
+	for _, user := range users {
+		if ids[user.ID] {
+			t.Errorf("found a repeated integer sequence value %d (user.ID)", user.ID)
+		} else {
+			ids[user.ID] = true
+		}
+
+		if names[user.Name] {
+			t.Errorf("found a repeated string sequence value %s (user.Name)", user.Name)
+		} else {
+			names[user.Name] = true
+		}
+	}
+}
+
+func TestFactorySeqIntStartsAt1(t *testing.T) {
+	type User struct {
+		ID int
+	}
+
+	var userFactory = NewFactory(&User{}).
+		SeqInt("ID", func(n int) (interface{}, error) {
+			return n, nil
+		})
+
+	user, err := userFactory.Create()
+	if err != nil {
+		t.Errorf("failed to create a User: %v", err)
+	}
+
+	if id := user.(*User).ID; id != 1 {
+		t.Errorf("the starting number for SeqInt was %d, not 1", id)
+	}
+}
+
+func TestFactorySeqStringStartsAt1(t *testing.T) {
+	type User struct {
+		Name string
+	}
+
+	var userFactory = NewFactory(&User{}).
+		SeqString("Name", func(s string) (interface{}, error) {
+			return s, nil
+		})
+
+	user, err := userFactory.Create()
+	if err != nil {
+		t.Errorf("failed to create a User: %v", err)
+	}
+
+	if name := user.(*User).Name; name != "1" {
+		t.Errorf("the starting number for SeqString was %s, not 1", name)
 	}
 }
