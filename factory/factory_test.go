@@ -1,6 +1,7 @@
 package factory
 
 import (
+	"context"
 	"sync"
 	"testing"
 )
@@ -307,6 +308,77 @@ func TestFactoryWithOptions(t *testing.T) {
 	if user.Group2.Name != "web" {
 		t.Errorf("user.Group2.Name should be web, not %v", user.Group2.Name)
 	}
+}
+
+func TestFactoryMuctCreateWithContextAndOptions(t *testing.T) {
+	type User struct {
+		ID   int
+		Name string
+	}
+
+	type ctxField int
+	const nameField ctxField = 1
+
+	var userFactory = NewFactory(&User{})
+
+	t.Run("with valid options", func(t *testing.T) {
+		user := userFactory.MustCreateWithContextAndOption(context.Background(), map[string]interface{}{
+			"ID":   1,
+			"Name": "bluele",
+		}).(*User)
+
+		if user.ID != 1 {
+			t.Errorf("user.ID should be 1, not %v", user.ID)
+		}
+
+		if user.Name != "bluele" {
+			t.Errorf("user.Name should be bluele, not %v", user.Name)
+		}
+	})
+
+	t.Run("with broken options", func(t *testing.T) {
+		defer func() {
+			if recover() == nil {
+				t.Errorf("func should panic")
+			}
+		}()
+
+		userFactory.MustCreateWithContextAndOption(context.Background(), map[string]interface{}{
+			"ID":   1,
+			"Name": 3,
+		})
+	})
+
+	t.Run("with filled context", func(t *testing.T) {
+		userFactory := NewFactory(&User{}).Attr("Name", func(args Args) (interface{}, error) {
+			return args.Context().Value(nameField), nil
+		})
+
+		ctx := context.WithValue(context.Background(), nameField, "bluele from ctx")
+		user := userFactory.MustCreateWithContextAndOption(ctx, map[string]interface{}{
+			"ID": 1,
+		}).(*User)
+
+		if user.Name != "bluele from ctx" {
+			t.Errorf("user.Name should be bluele from ctx, not %v", user.Name)
+		}
+	})
+
+	t.Run("with nil context", func(t *testing.T) {
+		userFactory := NewFactory(&User{}).Attr("Name", func(args Args) (interface{}, error) {
+			return args.Context().Value(nameField), nil
+		})
+
+		defer func() {
+			if recover() == nil {
+				t.Errorf("func should panic")
+			}
+		}()
+
+		userFactory.MustCreateWithContextAndOption(nil, map[string]interface{}{
+			"ID": 1,
+		})
+	})
 }
 
 func TestFactorySeqConcurrency(t *testing.T) {
