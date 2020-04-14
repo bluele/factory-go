@@ -311,7 +311,11 @@ func (fa *Factory) MustCreate() interface{} {
 }
 
 func (fa *Factory) MustCreateWithOption(opt map[string]interface{}) interface{} {
-	inst, err := fa.CreateWithOption(opt)
+	return fa.MustCreateWithContextAndOption(context.Background(), opt)
+}
+
+func (fa *Factory) MustCreateWithContextAndOption(ctx context.Context, opt map[string]interface{}) interface{} {
+	inst, err := fa.CreateWithContextAndOption(ctx, opt)
 	if err != nil {
 		panic(err)
 	}
