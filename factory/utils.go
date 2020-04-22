@@ -37,7 +37,7 @@ func setValueWithAttrPath(inst *reflect.Value, tp reflect.Type, attr string, v i
 		}
 
 		field := current.FieldByName(attr)
-		if field == emptyValue || !ok {
+		if field == emptyValue {
 			isSet = false
 			break
 		}
