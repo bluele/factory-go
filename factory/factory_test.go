@@ -453,6 +453,26 @@ func TestFactorySeqIntStartsAt1(t *testing.T) {
 	}
 }
 
+func TestFactorySeqInt64StartsAt1(t *testing.T) {
+	type User struct {
+		ID int64
+	}
+
+	var userFactory = NewFactory(&User{}).
+		SeqInt64("ID", func(n int64) (interface{}, error) {
+			return n, nil
+		})
+
+	user, err := userFactory.Create()
+	if err != nil {
+		t.Errorf("failed to create a User: %v", err)
+	}
+
+	if id := user.(*User).ID; id != 1 {
+		t.Errorf("the starting number for SeqInt was %d, not 1", id)
+	}
+}
+
 func TestFactorySeqStringStartsAt1(t *testing.T) {
 	type User struct {
 		Name string
