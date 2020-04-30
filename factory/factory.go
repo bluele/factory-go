@@ -189,6 +189,16 @@ func (fa *Factory) SeqInt(name string, gen func(int) (interface{}, error)) *Fact
 	return fa
 }
 
+func (fa *Factory) SeqInt64(name string, gen func(int64) (interface{}, error)) *Factory {
+	idx := fa.checkIdx(name)
+	var seq int64 = 0
+	fa.attrGens[idx].genFunc = func(args Args) (interface{}, error) {
+		new := atomic.AddInt64(&seq, 1)
+		return gen(new)
+	}
+	return fa
+}
+
 func (fa *Factory) SeqString(name string, gen func(string) (interface{}, error)) *Factory {
 	idx := fa.checkIdx(name)
 	var seq int64 = 0
