@@ -1,7 +1,7 @@
 # factory-go
 
-[![wercker status](https://app.wercker.com/status/1331f3d73cd25c2b45f76475b40c6a9c/m/master "wercker status")](https://app.wercker.com/project/bykey/1331f3d73cd25c2b45f76475b40c6a9c)[![GoDoc](https://godoc.org/github.com/bluele/factory-go/factory?status.png)](https://godoc.org/github.com/bluele/factory-go/factory)
-
+![Test](https://github.com/bluele/factory-go/workflows/Test/badge.svg)
+[![GoDoc](https://godoc.org/github.com/bluele/factory-go?status.svg)](https://pkg.go.dev/github.com/bluele/factory-go?tab=doc)
 
 factory-go is a is a fixtures replacement inspired by [factory_boy](https://github.com/rbarrois/factory_boy) and [factory_girl](https://github.com/thoughtbot/factory_girl).
 
