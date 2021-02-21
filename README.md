@@ -3,7 +3,7 @@
 ![Test](https://github.com/bluele/factory-go/workflows/Test/badge.svg)
 [![GoDoc](https://godoc.org/github.com/bluele/factory-go?status.svg)](https://pkg.go.dev/github.com/bluele/factory-go?tab=doc)
 
-factory-go is a is a fixtures replacement inspired by [factory_boy](https://github.com/rbarrois/factory_boy) and [factory_girl](https://github.com/thoughtbot/factory_girl).
+factory-go is a fixtures replacement inspired by [factory_boy](https://github.com/FactoryBoy/factory_boy) and [factory_bot](https://github.com/thoughtbot/factory_bot).
 
 It can be generated easily complex objects by using this, and maintain easily those objects generaters.
 
