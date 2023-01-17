@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bluele/factory-go/factory"
+	"github.com/hyuti/factory-go/factory"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )

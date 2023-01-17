@@ -1,7 +1,7 @@
 # factory-go
 
-![Test](https://github.com/bluele/factory-go/workflows/Test/badge.svg)
-[![GoDoc](https://godoc.org/github.com/bluele/factory-go?status.svg)](https://pkg.go.dev/github.com/bluele/factory-go?tab=doc)
+![Test](https://github.com/hyuti/factory-go/workflows/Test/badge.svg)
+[![GoDoc](https://godoc.org/github.com/hyuti/factory-go?status.svg)](https://pkg.go.dev/github.com/hyuti/factory-go?tab=doc)
 
 factory-go is a fixtures replacement inspired by [factory_boy](https://github.com/FactoryBoy/factory_boy) and [factory_bot](https://github.com/thoughtbot/factory_bot).
 
@@ -10,19 +10,19 @@ It can be generated easily complex objects by using this, and maintain easily th
 ## Install
 
 ```
-$ go get -u github.com/bluele/factory-go/factory
+$ go get -u github.com/hyuti/factory-go/factory
 ```
 
 ## Usage
 
-All of the following code on [examples](https://github.com/bluele/factory-go/tree/master/examples).
+All of the following code on [examples](https://github.com/hyuti/factory-go/tree/master/examples).
 
-* [Define a simple factory](https://github.com/bluele/factory-go#define-a-simple-factory)
-* [Use factory with random yet realistic values](https://github.com/bluele/factory-go#use-factory-with-random-yet-realistic-values)
-* [Define a factory includes sub-factory](https://github.com/bluele/factory-go#define-a-factory-includes-sub-factory)
-* [Define a factory includes a slice for sub-factory](https://github.com/bluele/factory-go#define-a-factory-includes-a-slice-for-sub-factory)
-* [Define a factory includes sub-factory that contains self-reference](https://github.com/bluele/factory-go#define-a-factory-includes-sub-factory-that-contains-self-reference)
-* [Define a sub-factory refers to parent factory](https://github.com/bluele/factory-go#define-a-sub-factory-refers-to-parent-factory)
+* [Define a simple factory](https://github.com/hyuti/factory-go#define-a-simple-factory)
+* [Use factory with random yet realistic values](https://github.com/hyuti/factory-go#use-factory-with-random-yet-realistic-values)
+* [Define a factory includes sub-factory](https://github.com/hyuti/factory-go#define-a-factory-includes-sub-factory)
+* [Define a factory includes a slice for sub-factory](https://github.com/hyuti/factory-go#define-a-factory-includes-a-slice-for-sub-factory)
+* [Define a factory includes sub-factory that contains self-reference](https://github.com/hyuti/factory-go#define-a-factory-includes-sub-factory-that-contains-self-reference)
+* [Define a sub-factory refers to parent factory](https://github.com/hyuti/factory-go#define-a-sub-factory-refers-to-parent-factory)
 
 ### Define a simple factory
 
@@ -33,7 +33,7 @@ package main
 
 import (
   "fmt"
-  "github.com/bluele/factory-go/factory"
+  "github.com/hyuti/factory-go/factory"
 )
 
 type User struct {
@@ -78,7 +78,7 @@ package main
 import (
   "fmt"
   "github.com/Pallinder/go-randomdata"
-  "github.com/bluele/factory-go/factory"
+  "github.com/hyuti/factory-go/factory"
 )
 
 type User struct {
@@ -121,7 +121,7 @@ package main
 
 import (
   "fmt"
-  "github.com/bluele/factory-go/factory"
+  "github.com/hyuti/factory-go/factory"
 )
 
 type Group struct {
@@ -180,7 +180,7 @@ package main
 
 import (
   "fmt"
-  "github.com/bluele/factory-go/factory"
+  "github.com/hyuti/factory-go/factory"
 )
 
 type Post struct {
@@ -248,7 +248,7 @@ package main
 import (
   "fmt"
   "github.com/Pallinder/go-randomdata"
-  "github.com/bluele/factory-go/factory"
+  "github.com/hyuti/factory-go/factory"
 )
 
 type User struct {
@@ -291,7 +291,7 @@ package main
 
 import (
   "fmt"
-  "github.com/bluele/factory-go/factory"
+  "github.com/hyuti/factory-go/factory"
 )
 
 type User struct {
@@ -351,11 +351,11 @@ Group.ID: 1
 
 Currently this project has no support for directly integration with ORM like [gorm](https://github.com/jinzhu/gorm), so you need to do manually.
 
-Here is an example: https://github.com/bluele/factory-go/blob/master/examples/gorm_integration.go
+Here is an example: https://github.com/hyuti/factory-go/blob/master/examples/gorm_integration.go
 
 # Author
 
 **Jun Kimura**
 
-* <http://github.com/bluele>
+* <http://github.com/hyuti>
 * <junkxdev@gmail.com>

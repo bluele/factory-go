@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bluele/factory-go/factory"
 	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
+	"github.com/hyuti/factory-go/factory"
 )
 
 type Group struct {

@@ -22,7 +22,7 @@ func TestFactory(t *testing.T) {
 			return n, nil
 		}).
 		Attr("Name", func(args Args) (interface{}, error) {
-			return "bluele", nil
+			return "hyuti", nil
 		})
 
 	iuser, err := userFactory.Create()
@@ -38,8 +38,8 @@ func TestFactory(t *testing.T) {
 		t.Error("user.ID should be 1.")
 		return
 	}
-	if user.Name != "bluele" {
-		t.Error(`user.Name should be "bluele".`)
+	if user.Name != "hyuti" {
+		t.Error(`user.Name should be "hyuti".`)
 		return
 	}
 	if user.Location != "Tokyo" {
@@ -95,7 +95,7 @@ func TestSubFactory(t *testing.T) {
 			return n, nil
 		}).
 		Attr("Name", func(args Args) (interface{}, error) {
-			return "bluele", nil
+			return "hyuti", nil
 		}).
 		SubFactory("Group", groupFactory)
 
@@ -140,7 +140,7 @@ func TestSubSliceFactory(t *testing.T) {
 			return n, nil
 		}).
 		Attr("Name", func(args Args) (interface{}, error) {
-			return "bluele", nil
+			return "hyuti", nil
 		}).
 		SubSliceFactory("Groups", groupFactory, func() int { return 3 })
 
@@ -185,7 +185,7 @@ func TestSubRecursiveFactory(t *testing.T) {
 			return n, nil
 		}).
 		Attr("Name", func(args Args) (interface{}, error) {
-			return "bluele", nil
+			return "hyuti", nil
 		}).
 		SubRecursiveFactory("Friend", userFactory, func() int { return 2 })
 
@@ -222,7 +222,7 @@ func TestFactoryConstruction(t *testing.T) {
 			return n, nil
 		}).
 		Attr("Name", func(args Args) (interface{}, error) {
-			return "bluele", nil
+			return "hyuti", nil
 		})
 
 	var user *User
@@ -291,7 +291,7 @@ func TestFactoryWithOptions(t *testing.T) {
 	var userFactory = NewFactory(&User{})
 	user := userFactory.MustCreateWithOption(map[string]interface{}{
 		"ID":          1,
-		"Name":        "bluele",
+		"Name":        "hyuti",
 		"Group1.Name": "programmer",
 		"Group2.Name": "web",
 	}).(*User)
@@ -300,8 +300,8 @@ func TestFactoryWithOptions(t *testing.T) {
 		t.Errorf("user.ID should be 1, not %v", user.ID)
 	}
 
-	if user.Name != "bluele" {
-		t.Errorf("user.Name should be bluele, not %v", user.Name)
+	if user.Name != "hyuti" {
+		t.Errorf("user.Name should be hyuti, not %v", user.Name)
 	}
 
 	if user.Group1.Name != "programmer" {
@@ -327,15 +327,15 @@ func TestFactoryMuctCreateWithContextAndOptions(t *testing.T) {
 	t.Run("with valid options", func(t *testing.T) {
 		user := userFactory.MustCreateWithContextAndOption(context.Background(), map[string]interface{}{
 			"ID":   1,
-			"Name": "bluele",
+			"Name": "hyuti",
 		}).(*User)
 
 		if user.ID != 1 {
 			t.Errorf("user.ID should be 1, not %v", user.ID)
 		}
 
-		if user.Name != "bluele" {
-			t.Errorf("user.Name should be bluele, not %v", user.Name)
+		if user.Name != "hyuti" {
+			t.Errorf("user.Name should be hyuti, not %v", user.Name)
 		}
 	})
 
@@ -357,13 +357,13 @@ func TestFactoryMuctCreateWithContextAndOptions(t *testing.T) {
 			return args.Context().Value(nameField), nil
 		})
 
-		ctx := context.WithValue(context.Background(), nameField, "bluele from ctx")
+		ctx := context.WithValue(context.Background(), nameField, "hyuti from ctx")
 		user := userFactory.MustCreateWithContextAndOption(ctx, map[string]interface{}{
 			"ID": 1,
 		}).(*User)
 
-		if user.Name != "bluele from ctx" {
-			t.Errorf("user.Name should be bluele from ctx, not %v", user.Name)
+		if user.Name != "hyuti from ctx" {
+			t.Errorf("user.Name should be hyuti from ctx, not %v", user.Name)
 		}
 	})
 
