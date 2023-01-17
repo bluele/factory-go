@@ -301,8 +301,7 @@ func (fa *Factory) getOrderingIdx() int {
 func (fa *Factory) fillMissingAttr(ctx context.Context) {
 	for _, attr := range fa.attrGens {
 		if !attr.isFilled {
-			curIdx := fa.getOrderingIdx()
-			fa.orderingAttrGens[curIdx] = attr
+			fa.fillAttrGen(nil, attr.key, attr.genFunc)
 		}
 	}
 }
@@ -320,13 +319,13 @@ func (fa *Factory) build(ctx context.Context, inst *reflect.Value, tp reflect.Ty
 
 	fa.fillMissingAttr(ctx)
 
-	for i, attr := range fa.orderingAttrGens {
+	for _, attr := range fa.orderingAttrGens {
 		if v, ok := opt[attr.key]; ok {
-			inst.Field(i).Set(reflect.ValueOf(v))
+			inst.FieldByName(attr.key).Set(reflect.ValueOf(v))
 		} else {
 			if attr.genFunc == nil {
 				if !attr.isNil {
-					inst.Field(i).Set(reflect.ValueOf(attr.value))
+					inst.FieldByName(attr.key).Set(reflect.ValueOf(attr.value))
 				}
 			} else {
 				v, err := attr.genFunc(args)
@@ -334,7 +333,7 @@ func (fa *Factory) build(ctx context.Context, inst *reflect.Value, tp reflect.Ty
 					return nil, err
 				}
 				if v != nil {
-					inst.Field(i).Set(reflect.ValueOf(v))
+					inst.FieldByName(attr.key).Set(reflect.ValueOf(v))
 				}
 			}
 		}
