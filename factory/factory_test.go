@@ -2,8 +2,11 @@ package factory
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestFactory(t *testing.T) {
@@ -490,5 +493,153 @@ func TestFactorySeqStringStartsAt1(t *testing.T) {
 
 	if name := user.(*User).Name; name != "1" {
 		t.Errorf("the starting number for SeqString was %s, not 1", name)
+	}
+}
+
+// this func tests create, not Create function which is exported one.
+func TestCreate(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name   string
+		setUp  func(*testing.T, context.Context)
+		expect func(*testing.T, context.Context)
+	}{
+		{
+			name:  "client not defines any attr gen",
+			setUp: func(t *testing.T, ctx context.Context) {},
+			expect: func(t *testing.T, ctx context.Context) {
+				type Foo struct {
+					Bar int
+				}
+				fooFactory := NewFactory(&Foo{})
+				require.Len(t, fooFactory.orderingAttrGens, fooFactory.numField)
+				fooAny, err := fooFactory.create(ctx, nil, nil)
+				foo, _ := fooAny.(*Foo)
+				for _, attr := range fooFactory.orderingAttrGens {
+					require.True(t, attr.isFilled)
+				}
+				require.Nil(t, err)
+				require.Empty(t, foo.Bar)
+			},
+		},
+		{
+			name:  "client defines ordering attr gen",
+			setUp: func(t *testing.T, ctx context.Context) {},
+			expect: func(t *testing.T, ctx context.Context) {
+				type Foo struct {
+					FooBar string
+					Bar    int
+				}
+				fooFactory := NewFactory(&Foo{}).
+					Attr("Bar", func(a Args) (interface{}, error) {
+						return 0, nil
+					}).
+					Attr("FooBar", func(a Args) (interface{}, error) {
+						return "foobar", nil
+					})
+				_, err := fooFactory.create(ctx, nil, nil)
+				require.Nil(t, err)
+				require.Equal(t, fooFactory.orderingAttrGens[0].key, "Bar")
+				require.Equal(t, fooFactory.orderingAttrGens[1].key, "FooBar")
+			},
+		},
+		{
+			name:  "client defines partial ordering attr gen",
+			setUp: func(t *testing.T, ctx context.Context) {},
+			expect: func(t *testing.T, ctx context.Context) {
+				type Foo struct {
+					FooBar string
+					Bar    int
+					BarFoo int
+				}
+				fooFactory := NewFactory(&Foo{}).
+					Attr("Bar", func(a Args) (interface{}, error) {
+						return 0, nil
+					}).
+					Attr("FooBar", func(a Args) (interface{}, error) {
+						return "foobar", nil
+					})
+				_, err := fooFactory.create(ctx, nil, nil)
+				require.Nil(t, err)
+				require.Equal(t, fooFactory.orderingAttrGens[0].key, "Bar")
+				require.Equal(t, fooFactory.orderingAttrGens[1].key, "FooBar")
+				require.Equal(t, fooFactory.orderingAttrGens[2].key, "BarFoo")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			tt.setUp(t, ctx)
+			tt.expect(t, ctx)
+		})
+	}
+}
+
+func TestFormatter(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name   string
+		setUp  func(*testing.T, context.Context)
+		expect func(*testing.T, context.Context)
+	}{
+		{
+			name:  "subfactory with formatters",
+			setUp: func(t *testing.T, ctx context.Context) {},
+			expect: func(t *testing.T, ctx context.Context) {
+				type Bar struct {
+					ID int
+				}
+				type Foo struct {
+					BarID int
+				}
+				barFactory := NewFactory(&Bar{ID: 1})
+				fooFactory := NewFactory(&Foo{}).
+					SubFactory("BarID", barFactory, func(i interface{}) (interface{}, error) {
+						inst, ok := i.(*Bar)
+						if !ok {
+							return nil, fmt.Errorf("unexpected type %t", i)
+						}
+						return inst.ID, nil
+					})
+				fooAny, err := fooFactory.Create()
+				foo, ok := fooAny.(*Foo)
+				require.True(t, ok)
+				require.Nil(t, err)
+				require.Equal(t, foo.BarID, 1)
+			},
+		},
+		{
+			name:  "non-subfactory with formatters",
+			setUp: func(t *testing.T, ctx context.Context) {},
+			expect: func(t *testing.T, ctx context.Context) {
+				type Bar struct {
+					Foo string
+				}
+				barFactory := NewFactory(&Bar{}).
+					Attr("Foo", func(a Args) (interface{}, error) {
+						return "foo", nil
+					}, func(i interface{}) (interface{}, error) {
+						inst, ok := i.(string)
+						if !ok {
+							return nil, fmt.Errorf("unexpected type %t", i)
+						}
+						return fmt.Sprintf("%sbar", inst), nil
+					})
+				barAny, err := barFactory.Create()
+				bar, ok := barAny.(*Bar)
+				require.True(t, ok)
+				require.Nil(t, err)
+				require.Equal(t, bar.Foo, "foobar")
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			tt.setUp(t, ctx)
+			tt.expect(t, ctx)
+		})
 	}
 }

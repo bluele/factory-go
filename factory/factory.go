@@ -13,109 +13,42 @@ var (
 	emptyValue = reflect.Value{}
 )
 
-type Factory struct {
-	model        interface{}
-	numField     int
-	rt           reflect.Type
-	rv           *reflect.Value
-	attrGens     []*attrGenerator
-	nameIndexMap map[string]int // pair for attribute name and field index.
-	isPtr        bool
-	onCreate     func(Args) error
-}
-
-type Args interface {
-	Instance() interface{}
-	Parent() Args
-	Context() context.Context
-	pipeline(int) *pipeline
-}
-
-type argsStruct struct {
-	ctx context.Context
-	rv  *reflect.Value
-	pl  *pipeline
-}
-
-// Instance returns a object to which the generator declared just before is applied
-func (args *argsStruct) Instance() interface{} {
-	return args.rv.Interface()
-}
-
-// Parent returns a parent argument if current factory is a subfactory of parent
-func (args *argsStruct) Parent() Args {
-	if args.pl == nil {
-		return nil
+type (
+	Args interface {
+		Instance() interface{}
+		Parent() Args
+		Context() context.Context
+		pipeline(int) *pipeline
 	}
-	return args.pl.parent
-}
-
-func (args *argsStruct) pipeline(num int) *pipeline {
-	if args.pl == nil {
-		return newPipeline(num)
+	Formatter func(interface{}) (interface{}, error)
+	Generator func(Args) (interface{}, error)
+	Factory   struct {
+		numField int
+		curIdx   int
+		isPtr    bool
+		model    interface{}
+		rt       reflect.Type
+		rv       *reflect.Value
+		attrGens []*attrGenerator
+		// Let say you have following struct:
+		// type order struct{
+		// 	customerName string
+		// 	customerId int
+		// }
+		// you need to ensure customer id field is generated through subfactory or whatever before customer name is generated, but surprisingly you mixed the order of these two fields
+		// or the above struct comes from another package which is not owned by you so that you cannot define the order as you wish
+		// which means that the above struct should be:
+		// type order struct{
+		// 	customerId int
+		// 	customerName string
+		// }
+		// orderingAttrGens field ensures fields generated in the order following by the attr you defined when you define a factory.
+		// see ordering-attr-with-formatter for more detail
+		orderingAttrGens []*attrGenerator
+		nameIndexMap     map[string]int // pair for attribute name and field index.
+		onCreate         func(Args) error
 	}
-	return args.pl
-}
-
-func (args *argsStruct) Context() context.Context {
-	return args.ctx
-}
-
-func (args *argsStruct) UpdateContext(ctx context.Context) {
-	args.ctx = ctx
-}
-
-type Stacks []*int64
-
-func (st *Stacks) Size(idx int) int64 {
-	return *(*st)[idx]
-}
-
-// Set method is not goroutine safe.
-func (st *Stacks) Set(idx, val int) {
-	var ini int64 = 0
-	(*st)[idx] = &ini
-	atomic.StoreInt64((*st)[idx], int64(val))
-}
-
-func (st *Stacks) Push(idx, delta int) {
-	atomic.AddInt64((*st)[idx], int64(delta))
-}
-
-func (st *Stacks) Pop(idx, delta int) {
-	atomic.AddInt64((*st)[idx], -int64(delta))
-}
-
-func (st *Stacks) Next(idx int) bool {
-	st.Pop(idx, 1)
-	return *(*st)[idx] >= 0
-}
-
-func (st *Stacks) Has(idx int) bool {
-	return (*st)[idx] != nil
-}
-
-type pipeline struct {
-	stacks Stacks
-	parent Args
-}
-
-func newPipeline(size int) *pipeline {
-	return &pipeline{stacks: make(Stacks, size)}
-}
-
-func (pl *pipeline) Next(args Args) *pipeline {
-	npl := &pipeline{}
-	npl.parent = args
-	npl.stacks = make(Stacks, len(pl.stacks))
-	for i, sptr := range pl.stacks {
-		if sptr != nil {
-			stack := *sptr
-			npl.stacks[i] = &stack
-		}
-	}
-	return npl
-}
+)
 
 // NewFactory returns a new factory for specified model class
 // Each generator is applied in the order in which they are declared
@@ -128,90 +61,55 @@ func NewFactory(model interface{}) *Factory {
 	return fa
 }
 
-type attrGenerator struct {
-	genFunc func(Args) (interface{}, error)
-	key     string
-	value   interface{}
-	isNil   bool
-}
-
-func (fa *Factory) init() {
-	rt := reflect.TypeOf(fa.model)
-	rv := reflect.ValueOf(fa.model)
-
-	fa.isPtr = rt.Kind() == reflect.Ptr
-
-	if fa.isPtr {
-		rt = rt.Elem()
-		rv = rv.Elem()
-	}
-
-	fa.numField = rv.NumField()
-
-	for i := 0; i < fa.numField; i++ {
-		tf := rt.Field(i)
-		vf := rv.Field(i)
-		ag := &attrGenerator{}
-
-		if !vf.CanSet() || (tf.Type.Kind() == reflect.Ptr && vf.IsNil()) {
-			ag.isNil = true
-		} else {
-			ag.value = vf.Interface()
+func (fa *Factory) wrapWithFormatter(gen Generator, formatters ...Formatter) Generator {
+	return func(a Args) (interface{}, error) {
+		ret, err := gen(a)
+		if err != nil {
+			return nil, err
 		}
-
-		attrName := getAttrName(tf, TagName)
-		ag.key = attrName
-		fa.nameIndexMap[attrName] = i
-		fa.attrGens = append(fa.attrGens, ag)
+		for _, f := range formatters {
+			ret, err = f(ret)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return ret, nil
 	}
-
-	fa.rt = rt
-	fa.rv = &rv
 }
 
-func (fa *Factory) modelName() string {
-	return fa.rt.Name()
+func (fa *Factory) Attr(name string, gen Generator, formatters ...Formatter) *Factory {
+	return fa.fillAttrGen(nil, name, fa.wrapWithFormatter(gen, formatters...))
 }
 
-func (fa *Factory) Attr(name string, gen func(Args) (interface{}, error)) *Factory {
-	idx := fa.checkIdx(name)
-	fa.attrGens[idx].genFunc = gen
-	return fa
-}
-
-func (fa *Factory) SeqInt(name string, gen func(int) (interface{}, error)) *Factory {
-	idx := fa.checkIdx(name)
-	var seq int64 = 0
-	fa.attrGens[idx].genFunc = func(args Args) (interface{}, error) {
+func (fa *Factory) SeqInt(name string, gen func(int) (interface{}, error), formatters ...Formatter) *Factory {
+	seq := int64(0)
+	genFunc := func(krgs Args) (interface{}, error) {
 		new := atomic.AddInt64(&seq, 1)
 		return gen(int(new))
 	}
-	return fa
+	return fa.fillAttrGen(nil, name, fa.wrapWithFormatter(genFunc, formatters...))
 }
 
-func (fa *Factory) SeqInt64(name string, gen func(int64) (interface{}, error)) *Factory {
-	idx := fa.checkIdx(name)
-	var seq int64 = 0
-	fa.attrGens[idx].genFunc = func(args Args) (interface{}, error) {
+func (fa *Factory) SeqInt64(name string, gen func(int64) (interface{}, error), formatters ...Formatter) *Factory {
+	seq := int64(0)
+	genFunc := func(args Args) (interface{}, error) {
 		new := atomic.AddInt64(&seq, 1)
 		return gen(new)
 	}
-	return fa
+	return fa.fillAttrGen(nil, name, fa.wrapWithFormatter(genFunc, formatters...))
 }
 
-func (fa *Factory) SeqString(name string, gen func(string) (interface{}, error)) *Factory {
-	idx := fa.checkIdx(name)
-	var seq int64 = 0
-	fa.attrGens[idx].genFunc = func(args Args) (interface{}, error) {
+func (fa *Factory) SeqString(name string, gen func(string) (interface{}, error), formatters ...Formatter) *Factory {
+	seq := int64(0)
+	genFunc := func(args Args) (interface{}, error) {
 		new := atomic.AddInt64(&seq, 1)
 		return gen(strconv.FormatInt(new, 10))
 	}
-	return fa
+	return fa.fillAttrGen(nil, name, fa.wrapWithFormatter(genFunc, formatters...))
 }
 
-func (fa *Factory) SubFactory(name string, sub *Factory) *Factory {
-	idx := fa.checkIdx(name)
-	fa.attrGens[idx].genFunc = func(args Args) (interface{}, error) {
+func (fa *Factory) SubFactory(name string, sub *Factory, formatters ...Formatter) *Factory {
+	genFunc := func(args Args) (interface{}, error) {
 		pipeline := args.pipeline(fa.numField)
 		ret, err := sub.create(args.Context(), nil, pipeline.Next(args))
 		if err != nil {
@@ -219,13 +117,13 @@ func (fa *Factory) SubFactory(name string, sub *Factory) *Factory {
 		}
 		return ret, nil
 	}
-	return fa
+	return fa.fillAttrGen(nil, name, fa.wrapWithFormatter(genFunc, formatters...))
 }
 
-func (fa *Factory) SubSliceFactory(name string, sub *Factory, getSize func() int) *Factory {
+func (fa *Factory) SubSliceFactory(name string, sub *Factory, getSize func() int, formatters ...Formatter) *Factory {
 	idx := fa.checkIdx(name)
 	tp := fa.rt.Field(idx).Type
-	fa.attrGens[idx].genFunc = func(args Args) (interface{}, error) {
+	genFunc := func(args Args) (interface{}, error) {
 		size := getSize()
 		pipeline := args.pipeline(fa.numField)
 		sv := reflect.MakeSlice(tp, size, size)
@@ -238,12 +136,12 @@ func (fa *Factory) SubSliceFactory(name string, sub *Factory, getSize func() int
 		}
 		return sv.Interface(), nil
 	}
-	return fa
+	return fa.fillAttrGen(&idx, name, fa.wrapWithFormatter(genFunc, formatters...))
 }
 
-func (fa *Factory) SubRecursiveFactory(name string, sub *Factory, getLimit func() int) *Factory {
+func (fa *Factory) SubRecursiveFactory(name string, sub *Factory, getLimit func() int, formatters ...Formatter) *Factory {
 	idx := fa.checkIdx(name)
-	fa.attrGens[idx].genFunc = func(args Args) (interface{}, error) {
+	genFunc := func(args Args) (interface{}, error) {
 		pl := args.pipeline(fa.numField)
 		if !pl.stacks.Has(idx) {
 			pl.stacks.Set(idx, getLimit())
@@ -257,13 +155,13 @@ func (fa *Factory) SubRecursiveFactory(name string, sub *Factory, getLimit func(
 		}
 		return nil, nil
 	}
-	return fa
+	return fa.fillAttrGen(&idx, name, fa.wrapWithFormatter(genFunc, formatters...))
 }
 
-func (fa *Factory) SubRecursiveSliceFactory(name string, sub *Factory, getSize, getLimit func() int) *Factory {
+func (fa *Factory) SubRecursiveSliceFactory(name string, sub *Factory, getSize, getLimit func() int, formatters ...Formatter) *Factory {
 	idx := fa.checkIdx(name)
 	tp := fa.rt.Field(idx).Type
-	fa.attrGens[idx].genFunc = func(args Args) (interface{}, error) {
+	genFunc := func(args Args) (interface{}, error) {
 		pl := args.pipeline(fa.numField)
 		if !pl.stacks.Has(idx) {
 			pl.stacks.Set(idx, getLimit())
@@ -282,7 +180,7 @@ func (fa *Factory) SubRecursiveSliceFactory(name string, sub *Factory, getSize, 
 		}
 		return nil, nil
 	}
-	return fa
+	return fa.fillAttrGen(&idx, name, fa.wrapWithFormatter(genFunc, formatters...))
 }
 
 // OnCreate registers a callback on object creation.
@@ -290,14 +188,6 @@ func (fa *Factory) SubRecursiveSliceFactory(name string, sub *Factory, getSize, 
 func (fa *Factory) OnCreate(cb func(Args) error) *Factory {
 	fa.onCreate = cb
 	return fa
-}
-
-func (fa *Factory) checkIdx(name string) int {
-	idx, ok := fa.nameIndexMap[name]
-	if !ok {
-		panic("No such attribute name: " + name)
-	}
-	return idx
 }
 
 func (fa *Factory) Create() (interface{}, error) {
@@ -373,6 +263,81 @@ func (fa *Factory) ConstructWithContextAndOption(ctx context.Context, ptr interf
 	return err
 }
 
+func (fa *Factory) init() {
+	rt := reflect.TypeOf(fa.model)
+	rv := reflect.ValueOf(fa.model)
+
+	fa.isPtr = rt.Kind() == reflect.Ptr
+
+	if fa.isPtr {
+		rt = rt.Elem()
+		rv = rv.Elem()
+	}
+
+	fa.numField = rv.NumField()
+	fa.orderingAttrGens = make([]*attrGenerator, fa.numField)
+
+	for i := 0; i < fa.numField; i++ {
+		tf := rt.Field(i)
+		vf := rv.Field(i)
+		ag := &attrGenerator{}
+
+		if !vf.CanSet() || (tf.Type.Kind() == reflect.Ptr && vf.IsNil()) {
+			ag.isNil = true
+		} else {
+			ag.value = vf.Interface()
+		}
+
+		attrName := getAttrName(tf, TagName)
+		ag.key = attrName
+		ag.isFilled = false
+		fa.nameIndexMap[attrName] = i
+		fa.attrGens = append(fa.attrGens, ag)
+	}
+
+	fa.rt = rt
+	fa.rv = &rv
+}
+
+func (fa *Factory) modelName() string {
+	return fa.rt.Name()
+}
+
+func (fa *Factory) fillAttrGen(idx *int, name string, gen func(Args) (interface{}, error)) *Factory {
+	if idx == nil {
+		i := fa.checkIdx(name)
+		idx = &i
+	}
+	fa.attrGens[*idx].genFunc = gen
+	fa.attrGens[*idx].isFilled = true
+	orderingIdx := fa.getOrderingIdx()
+	fa.orderingAttrGens[orderingIdx] = fa.attrGens[*idx]
+	return fa
+}
+
+func (fa *Factory) checkIdx(name string) int {
+	idx, ok := fa.nameIndexMap[name]
+	if !ok {
+		panic("No such attribute name: " + name)
+	}
+	return idx
+}
+func (fa *Factory) getOrderingIdx() int {
+	idx := fa.curIdx
+	if fa.curIdx < fa.numField-1 {
+		fa.curIdx += 1
+	}
+	return idx
+}
+
+func (fa *Factory) fillMissingAttr(ctx context.Context) {
+	for _, attr := range fa.attrGens {
+		if !attr.isFilled {
+			fa.fillAttrGen(nil, attr.key, attr.genFunc)
+		}
+	}
+}
+
 func (fa *Factory) build(ctx context.Context, inst *reflect.Value, tp reflect.Type, opt map[string]interface{}, pl *pipeline) (interface{}, error) {
 	args := &argsStruct{}
 	args.pl = pl
@@ -384,22 +349,23 @@ func (fa *Factory) build(ctx context.Context, inst *reflect.Value, tp reflect.Ty
 		args.rv = inst
 	}
 
-	for i := 0; i < fa.numField; i++ {
-		if v, ok := opt[fa.attrGens[i].key]; ok {
-			inst.Field(i).Set(reflect.ValueOf(v))
+	fa.fillMissingAttr(ctx)
+
+	for _, attr := range fa.orderingAttrGens {
+		if v, ok := opt[attr.key]; ok {
+			inst.FieldByName(attr.key).Set(reflect.ValueOf(v))
 		} else {
-			ag := fa.attrGens[i]
-			if ag.genFunc == nil {
-				if !ag.isNil {
-					inst.Field(i).Set(reflect.ValueOf(ag.value))
+			if attr.genFunc == nil {
+				if !attr.isNil {
+					inst.FieldByName(attr.key).Set(reflect.ValueOf(attr.value))
 				}
 			} else {
-				v, err := ag.genFunc(args)
+				v, err := attr.genFunc(args)
 				if err != nil {
 					return nil, err
 				}
 				if v != nil {
-					inst.Field(i).Set(reflect.ValueOf(v))
+					inst.FieldByName(attr.key).Set(reflect.ValueOf(v))
 				}
 			}
 		}
