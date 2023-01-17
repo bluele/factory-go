@@ -20,14 +20,30 @@ type (
 		Context() context.Context
 		pipeline(int) *pipeline
 	}
-	Factory struct {
-		numField         int
-		curIdx           int
-		isPtr            bool
-		model            interface{}
-		rt               reflect.Type
-		rv               *reflect.Value
-		attrGens         []*attrGenerator
+	Formatter func(interface{}) (interface{}, error)
+	Generator func(Args) (interface{}, error)
+	Factory   struct {
+		numField int
+		curIdx   int
+		isPtr    bool
+		model    interface{}
+		rt       reflect.Type
+		rv       *reflect.Value
+		attrGens []*attrGenerator
+		// Let say you have following struct:
+		// type order struct{
+		// 	customerName string
+		// 	customerId int
+		// }
+		// you need to ensure customer id field is generated through subfactory or whatever before customer name is generated, but surprisingly you mixed the order of these two fields
+		// or the above struct comes from another package which is not owned by you so that you cannot define the order as you wish
+		// which means that the above struct should be:
+		// type order struct{
+		// 	customerId int
+		// 	customerName string
+		// }
+		// orderingAttrGens field ensures fields generated in the order following by the attr you defined when you define a factory.
+		// see ordering-attr-with-formatter for more detail
 		orderingAttrGens []*attrGenerator
 		nameIndexMap     map[string]int // pair for attribute name and field index.
 		onCreate         func(Args) error
@@ -45,38 +61,54 @@ func NewFactory(model interface{}) *Factory {
 	return fa
 }
 
-func (fa *Factory) Attr(name string, gen func(Args) (interface{}, error)) *Factory {
-	return fa.fillAttrGen(nil, name, gen)
+func (fa *Factory) wrapWithFormatter(gen Generator, formatters ...Formatter) Generator {
+	return func(a Args) (interface{}, error) {
+		ret, err := gen(a)
+		if err != nil {
+			return nil, err
+		}
+		for _, f := range formatters {
+			ret, err = f(ret)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return ret, nil
+	}
 }
 
-func (fa *Factory) SeqInt(name string, gen func(int) (interface{}, error)) *Factory {
+func (fa *Factory) Attr(name string, gen Generator, formatters ...Formatter) *Factory {
+	return fa.fillAttrGen(nil, name, fa.wrapWithFormatter(gen, formatters...))
+}
+
+func (fa *Factory) SeqInt(name string, gen func(int) (interface{}, error), formatters ...Formatter) *Factory {
 	seq := int64(0)
 	genFunc := func(krgs Args) (interface{}, error) {
 		new := atomic.AddInt64(&seq, 1)
 		return gen(int(new))
 	}
-	return fa.fillAttrGen(nil, name, genFunc)
+	return fa.fillAttrGen(nil, name, fa.wrapWithFormatter(genFunc, formatters...))
 }
 
-func (fa *Factory) SeqInt64(name string, gen func(int64) (interface{}, error)) *Factory {
+func (fa *Factory) SeqInt64(name string, gen func(int64) (interface{}, error), formatters ...Formatter) *Factory {
 	seq := int64(0)
 	genFunc := func(args Args) (interface{}, error) {
 		new := atomic.AddInt64(&seq, 1)
 		return gen(new)
 	}
-	return fa.fillAttrGen(nil, name, genFunc)
+	return fa.fillAttrGen(nil, name, fa.wrapWithFormatter(genFunc, formatters...))
 }
 
-func (fa *Factory) SeqString(name string, gen func(string) (interface{}, error)) *Factory {
+func (fa *Factory) SeqString(name string, gen func(string) (interface{}, error), formatters ...Formatter) *Factory {
 	seq := int64(0)
 	genFunc := func(args Args) (interface{}, error) {
 		new := atomic.AddInt64(&seq, 1)
 		return gen(strconv.FormatInt(new, 10))
 	}
-	return fa.fillAttrGen(nil, name, genFunc)
+	return fa.fillAttrGen(nil, name, fa.wrapWithFormatter(genFunc, formatters...))
 }
 
-func (fa *Factory) SubFactory(name string, sub *Factory) *Factory {
+func (fa *Factory) SubFactory(name string, sub *Factory, formatters ...Formatter) *Factory {
 	genFunc := func(args Args) (interface{}, error) {
 		pipeline := args.pipeline(fa.numField)
 		ret, err := sub.create(args.Context(), nil, pipeline.Next(args))
@@ -85,10 +117,10 @@ func (fa *Factory) SubFactory(name string, sub *Factory) *Factory {
 		}
 		return ret, nil
 	}
-	return fa.fillAttrGen(nil, name, genFunc)
+	return fa.fillAttrGen(nil, name, fa.wrapWithFormatter(genFunc, formatters...))
 }
 
-func (fa *Factory) SubSliceFactory(name string, sub *Factory, getSize func() int) *Factory {
+func (fa *Factory) SubSliceFactory(name string, sub *Factory, getSize func() int, formatters ...Formatter) *Factory {
 	idx := fa.checkIdx(name)
 	tp := fa.rt.Field(idx).Type
 	genFunc := func(args Args) (interface{}, error) {
@@ -104,10 +136,10 @@ func (fa *Factory) SubSliceFactory(name string, sub *Factory, getSize func() int
 		}
 		return sv.Interface(), nil
 	}
-	return fa.fillAttrGen(&idx, name, genFunc)
+	return fa.fillAttrGen(&idx, name, fa.wrapWithFormatter(genFunc, formatters...))
 }
 
-func (fa *Factory) SubRecursiveFactory(name string, sub *Factory, getLimit func() int) *Factory {
+func (fa *Factory) SubRecursiveFactory(name string, sub *Factory, getLimit func() int, formatters ...Formatter) *Factory {
 	idx := fa.checkIdx(name)
 	genFunc := func(args Args) (interface{}, error) {
 		pl := args.pipeline(fa.numField)
@@ -123,10 +155,10 @@ func (fa *Factory) SubRecursiveFactory(name string, sub *Factory, getLimit func(
 		}
 		return nil, nil
 	}
-	return fa.fillAttrGen(&idx, name, genFunc)
+	return fa.fillAttrGen(&idx, name, fa.wrapWithFormatter(genFunc, formatters...))
 }
 
-func (fa *Factory) SubRecursiveSliceFactory(name string, sub *Factory, getSize, getLimit func() int) *Factory {
+func (fa *Factory) SubRecursiveSliceFactory(name string, sub *Factory, getSize, getLimit func() int, formatters ...Formatter) *Factory {
 	idx := fa.checkIdx(name)
 	tp := fa.rt.Field(idx).Type
 	genFunc := func(args Args) (interface{}, error) {
@@ -148,7 +180,7 @@ func (fa *Factory) SubRecursiveSliceFactory(name string, sub *Factory, getSize, 
 		}
 		return nil, nil
 	}
-	return fa.fillAttrGen(&idx, name, genFunc)
+	return fa.fillAttrGen(&idx, name, fa.wrapWithFormatter(genFunc, formatters...))
 }
 
 // OnCreate registers a callback on object creation.

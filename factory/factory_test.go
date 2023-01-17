@@ -2,6 +2,7 @@ package factory
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
 
@@ -567,6 +568,73 @@ func TestCreate(t *testing.T) {
 		},
 	}
 
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			tt.setUp(t, ctx)
+			tt.expect(t, ctx)
+		})
+	}
+}
+
+func TestFormatter(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name   string
+		setUp  func(*testing.T, context.Context)
+		expect func(*testing.T, context.Context)
+	}{
+		{
+			name:  "subfactory with formatters",
+			setUp: func(t *testing.T, ctx context.Context) {},
+			expect: func(t *testing.T, ctx context.Context) {
+				type Bar struct {
+					ID int
+				}
+				type Foo struct {
+					BarID int
+				}
+				barFactory := NewFactory(&Bar{ID: 1})
+				fooFactory := NewFactory(&Foo{}).
+					SubFactory("BarID", barFactory, func(i interface{}) (interface{}, error) {
+						inst, ok := i.(*Bar)
+						if !ok {
+							return nil, fmt.Errorf("unexpected type %t", i)
+						}
+						return inst.ID, nil
+					})
+				fooAny, err := fooFactory.Create()
+				foo, ok := fooAny.(*Foo)
+				require.True(t, ok)
+				require.Nil(t, err)
+				require.Equal(t, foo.BarID, 1)
+			},
+		},
+		{
+			name:  "non-subfactory with formatters",
+			setUp: func(t *testing.T, ctx context.Context) {},
+			expect: func(t *testing.T, ctx context.Context) {
+				type Bar struct {
+					Foo string
+				}
+				barFactory := NewFactory(&Bar{}).
+					Attr("Foo", func(a Args) (interface{}, error) {
+						return "foo", nil
+					}, func(i interface{}) (interface{}, error) {
+						inst, ok := i.(string)
+						if !ok {
+							return nil, fmt.Errorf("unexpected type %t", i)
+						}
+						return fmt.Sprintf("%sbar", inst), nil
+					})
+				barAny, err := barFactory.Create()
+				bar, ok := barAny.(*Bar)
+				require.True(t, ok)
+				require.Nil(t, err)
+				require.Equal(t, bar.Foo, "foobar")
+			},
+		},
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
