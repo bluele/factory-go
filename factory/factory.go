@@ -23,27 +23,13 @@ type (
 	Formatter func(interface{}) (interface{}, error)
 	Generator func(Args) (interface{}, error)
 	Factory   struct {
-		numField int
-		curIdx   int
-		isPtr    bool
-		model    interface{}
-		rt       reflect.Type
-		rv       *reflect.Value
-		attrGens []*attrGenerator
-		// Let say you have following struct:
-		// type order struct{
-		// 	customerName string
-		// 	customerId int
-		// }
-		// you need to ensure customer id field is generated through subfactory or whatever before customer name is generated, but surprisingly you mixed the order of these two fields
-		// or the above struct comes from another package which is not owned by you so that you cannot define the order as you wish
-		// which means that the above struct should be:
-		// type order struct{
-		// 	customerId int
-		// 	customerName string
-		// }
-		// orderingAttrGens field ensures fields generated in the order following by the attr you defined when you define a factory.
-		// see ordering-attr-with-formatter for more detail
+		numField         int
+		curIdx           int
+		isPtr            bool
+		model            interface{}
+		rt               reflect.Type
+		rv               *reflect.Value
+		attrGens         []*attrGenerator
 		orderingAttrGens []*attrGenerator
 		nameIndexMap     map[string]int // pair for attribute name and field index.
 		onCreate         func(Args) error
