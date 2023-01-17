@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+
+	"github.com/Pallinder/go-randomdata"
 	"github.com/bluele/factory-go/factory"
 )
 
@@ -11,14 +13,14 @@ type User struct {
 	Location string
 }
 
-// 'Location: "Tokyo"' is default value.
 var UserFactory = factory.NewFactory(
-	&User{Location: "Tokyo"},
+	&User{},
 ).SeqInt("ID", func(n int) (interface{}, error) {
 	return n, nil
 }).Attr("Name", func(args factory.Args) (interface{}, error) {
-	user := args.Instance().(*User)
-	return fmt.Sprintf("user-%d", user.ID), nil
+	return randomdata.FullName(randomdata.RandomGender), nil
+}).Attr("Location", func(args factory.Args) (interface{}, error) {
+	return randomdata.City(), nil
 })
 
 func main() {

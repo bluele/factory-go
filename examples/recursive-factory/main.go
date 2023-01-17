@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/Pallinder/go-randomdata"
 	"github.com/bluele/factory-go/factory"
 )

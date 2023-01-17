@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/bluele/factory-go/factory"
 )
 
@@ -24,7 +25,7 @@ func main() {
 	for i := 1; i <= 3; i++ {
 		user := UserFactory.MustCreateWithOption(map[string]interface{}{
 			"Groups": []*Group{
-				&Group{i}, &Group{i + 1},
+				{i}, {i + 1},
 			},
 		}).(*User)
 		fmt.Println("ID:", user.ID)
