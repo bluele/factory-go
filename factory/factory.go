@@ -50,7 +50,7 @@ func (fa *Factory) Attr(name string, gen func(Args) (interface{}, error)) *Facto
 }
 
 func (fa *Factory) SeqInt(name string, gen func(int) (interface{}, error)) *Factory {
-	var seq int64 = 0
+	seq := int64(0)
 	genFunc := func(krgs Args) (interface{}, error) {
 		new := atomic.AddInt64(&seq, 1)
 		return gen(int(new))
@@ -59,7 +59,7 @@ func (fa *Factory) SeqInt(name string, gen func(int) (interface{}, error)) *Fact
 }
 
 func (fa *Factory) SeqInt64(name string, gen func(int64) (interface{}, error)) *Factory {
-	var seq int64 = 0
+	seq := int64(0)
 	genFunc := func(args Args) (interface{}, error) {
 		new := atomic.AddInt64(&seq, 1)
 		return gen(new)
@@ -68,7 +68,7 @@ func (fa *Factory) SeqInt64(name string, gen func(int64) (interface{}, error)) *
 }
 
 func (fa *Factory) SeqString(name string, gen func(string) (interface{}, error)) *Factory {
-	var seq int64 = 0
+	seq := int64(0)
 	genFunc := func(args Args) (interface{}, error) {
 		new := atomic.AddInt64(&seq, 1)
 		return gen(strconv.FormatInt(new, 10))
