@@ -7,6 +7,7 @@ import (
 )
 
 type (
+	Stacks   []*int64
 	pipeline struct {
 		stacks Stacks
 		parent Args

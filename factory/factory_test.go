@@ -492,3 +492,12 @@ func TestFactorySeqStringStartsAt1(t *testing.T) {
 		t.Errorf("the starting number for SeqString was %s, not 1", name)
 	}
 }
+
+func TestBuild(t *testing.T) {
+	t.Parallel()
+	tests := struct {
+		name   string
+		setUp  func()
+		expect func()
+	}{}
+}

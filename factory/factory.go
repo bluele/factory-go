@@ -14,8 +14,7 @@ var (
 )
 
 type (
-	Stacks []*int64
-	Args   interface {
+	Args interface {
 		Instance() interface{}
 		Parent() Args
 		Context() context.Context
