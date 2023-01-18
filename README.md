@@ -1,7 +1,7 @@
 # factory-go
 
-![Test](https://github.com/hyuti/factory-go/workflows/Test/badge.svg)
-[![GoDoc](https://godoc.org/github.com/hyuti/factory-go?status.svg)](https://pkg.go.dev/github.com/hyuti/factory-go?tab=doc)
+![Test](https://github.com/bluele/factory-go/workflows/Test/badge.svg)
+[![GoDoc](https://godoc.org/github.com/bluele/factory-go?status.svg)](https://pkg.go.dev/github.com/bluele/factory-go?tab=doc)
 
 factory-go is a fixtures replacement inspired by [factory_boy](https://github.com/FactoryBoy/factory_boy) and [factory_bot](https://github.com/thoughtbot/factory_bot).
 
@@ -357,5 +357,5 @@ Here is an example: https://github.com/hyuti/factory-go/blob/master/examples/gor
 
 **Jun Kimura**
 
-* <http://github.com/hyuti>
+* <http://github.com/bluele>
 * <junkxdev@gmail.com>
