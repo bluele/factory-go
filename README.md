@@ -18,11 +18,13 @@ $ go get -u github.com/hyuti/factory-go/factory
 All of the following code on [examples](https://github.com/hyuti/factory-go/tree/master/examples).
 
 * [Define a simple factory](https://github.com/hyuti/factory-go#define-a-simple-factory)
+* [Define a factory which has input type different from output type](https://github.com/hyuti/factory-go#define-a-factory-which-has-input-type-different-from-output-type)
 * [Use factory with random yet realistic values](https://github.com/hyuti/factory-go#use-factory-with-random-yet-realistic-values)
 * [Define a factory includes sub-factory](https://github.com/hyuti/factory-go#define-a-factory-includes-sub-factory)
 * [Define a factory includes a slice for sub-factory](https://github.com/hyuti/factory-go#define-a-factory-includes-a-slice-for-sub-factory)
 * [Define a factory includes sub-factory that contains self-reference](https://github.com/hyuti/factory-go#define-a-factory-includes-sub-factory-that-contains-self-reference)
 * [Define a sub-factory refers to parent factory](https://github.com/hyuti/factory-go#define-a-sub-factory-refers-to-parent-factory)
+* [Define a factory has input type different from output type](https://github.com/hyuti/factory-go#define-a-sub-factory-refers-to-parent-factory)
 
 ### Define a simple factory
 
@@ -68,6 +70,84 @@ ID: 2  Name: user-2  Location: Tokyo
 ID: 3  Name: user-3  Location: Tokyo
 ```
 
+### Define a factory which has input type different from output type
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+
+	"github.com/Pallinder/go-randomdata"
+	"github.com/hyuti/factory-go/factory"
+)
+
+type (
+	CustomerInput struct {
+		Name string
+	}
+	Customer struct {
+		ID   string
+		Name string
+	}
+)
+
+func CustomerRepository(i *CustomerInput) *Customer {
+	return &Customer{
+		ID:   "foo",
+		Name: i.Name,
+	}
+}
+
+var customerFactory = factory.NewFactory(
+	&CustomerInput{},
+).Attr("Name", func(a factory.Args) (interface{}, error) {
+	return randomdata.FullName(randomdata.RandomGender), nil
+})
+
+func CustomerFactory(opts map[string]interface{}) *factory.Factory {
+	return factory.NewFactory(
+		&Customer{},
+	).OnCreate(func(a factory.Args) error {
+		ctx := a.Context()
+		iAny, err := customerFactory.CreateWithContextAndOption(ctx, opts)
+		if err != nil {
+			return err
+		}
+		i, ok := iAny.(*CustomerInput)
+		if !ok {
+			return fmt.Errorf("unexpected type %t", iAny)
+		}
+		e := CustomerRepository(i)
+		inst := a.Instance()
+		dst := reflect.ValueOf(inst)
+		src := reflect.ValueOf(e).Elem()
+		dst.Elem().Set(src)
+		return nil
+	})
+}
+
+func main() {
+	customerAny, err := CustomerFactory(nil).Create()
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		customer, ok := customerAny.(*Customer)
+		if !ok {
+			fmt.Printf("unexpected type %t\n", customerAny)
+		} else {
+			fmt.Printf("Name: %s, ID: %s\n", customer.Name, customer.ID)
+		}
+	}
+}
+```
+
+Output:
+
+```
+Name: some-name, ID: foo
+```
 ### Use factory with random yet realistic values.
 
 Tests look better with random yet realistic values. For example, you can use [go-randomdata](https://github.com/Pallinder/go-randomdata) library to get them:
