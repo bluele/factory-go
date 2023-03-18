@@ -427,12 +427,21 @@ Group.ID: 1
         User.ID: 3  User.Name: user-3  User.Group.ID: 1
 ```
 
+## Integration
+
+### Here is my intuitive [intergration](https://github.com/hyuti/factory-go#define-a-sub-factory-refers-to-parent-factory) with [ent](https://github.com/ent/ent).
+## Roadmap
+- 🚧️ Bulk create feature
+- 🚧️ Bulk update feature
+- 🚧️ Bulk delete feature
 ## Persistent models
 
 Currently this project has no support for directly integration with ORM like [gorm](https://github.com/jinzhu/gorm), so you need to do manually.
 
 Here is an example: https://github.com/hyuti/factory-go/blob/master/examples/gorm_integration.go
-
+# Maintained by
+The [original repo](https://github.com/bluele/factory-go) of this project has not been actived for a long time, so this is a fork and maintained by me. Any contributions will be appreciated.
+* [Hyuti](https://github.com/hyuti)
 # Author
 
 **Jun Kimura**
