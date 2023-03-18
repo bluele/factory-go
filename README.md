@@ -429,7 +429,7 @@ Group.ID: 1
 
 ## Integration
 
-### Here is my intuitive [intergration](https://github.com/hyuti/factory-go/blob/master/examples/integration-with-ent/main.go) with [ent](https://github.com/ent/ent).
+### Here is my intuitive [intergration](https://github.com/hyuti/factory-go/blob/master/examples/integration-with-ent/ent/factory.go) with [ent](https://github.com/ent/ent).
 ## Roadmap
 - 🚧️ Bulk create feature
 - 🚧️ Bulk update feature
