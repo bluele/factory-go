@@ -245,20 +245,37 @@ func (fa *Factory) CreateWithContextAndOption(ctx context.Context, opt map[strin
 	return fa.create(ctx, opt, nil)
 }
 
-func (fa *Factory) MustCreate() any {
-	return fa.MustCreateWithOption(nil)
+func (fa *Factory) CreateX() any {
+	return fa.CreateXWithOption(nil)
+}
+func (fa *Factory) CreateXWithOption(opt map[string]any) any {
+	return fa.CreateXWithContextAndOption(context.Background(), opt)
 }
 
-func (fa *Factory) MustCreateWithOption(opt map[string]any) any {
-	return fa.MustCreateWithContextAndOption(context.Background(), opt)
-}
-
-func (fa *Factory) MustCreateWithContextAndOption(ctx context.Context, opt map[string]any) any {
+func (fa *Factory) CreateXWithContextAndOption(ctx context.Context, opt map[string]any) any {
 	inst, err := fa.CreateWithContextAndOption(ctx, opt)
 	if err != nil {
 		panic(err)
 	}
 	return inst
+}
+
+// MustCreate will be deprecated in future releases.
+// Please use CreateX instead.
+func (fa *Factory) MustCreate() any {
+	return fa.CreateX()
+}
+
+// MustCreateWithOption will be deprecated in future releases.
+// Please use CreateXWithOption instead.
+func (fa *Factory) MustCreateWithOption(opt map[string]any) any {
+	return fa.CreateXWithContextAndOption(context.Background(), opt)
+}
+
+// MustCreateWithContextAndOption will be deprecated in future releases.
+// Please use CreateXWithContextAndOption instead.
+func (fa *Factory) MustCreateWithContextAndOption(ctx context.Context, opt map[string]any) any {
+	return fa.CreateXWithContextAndOption(ctx, opt)
 }
 
 /*
