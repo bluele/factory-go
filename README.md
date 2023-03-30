@@ -431,7 +431,6 @@ Group.ID: 1
 
 ### Here is my intuitive [intergration](https://github.com/hyuti/factory-go/blob/master/examples/integration-with-ent/ent/factory.go) with [ent](https://github.com/ent/ent).
 ## Roadmap
-- 🚧️ File factory
 - 🚧️ Bulk create feature
 - 🚧️ Bulk update feature
 - 🚧️ Bulk delete feature
