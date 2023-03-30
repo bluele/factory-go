@@ -13,9 +13,9 @@ type (
 		parent Args
 	}
 	attrGenerator struct {
-		genFunc  func(Args) (interface{}, error)
+		genFunc  func(Args) (any, error)
 		key      string
-		value    interface{}
+		value    any
 		isNil    bool
 		isFilled bool
 	}
@@ -31,7 +31,7 @@ func newPipeline(size int) *pipeline {
 }
 
 // Instance returns a object to which the generator declared just before is applied
-func (args *argsStruct) Instance() interface{} {
+func (args *argsStruct) Instance() any {
 	return args.rv.Interface()
 }
 

@@ -47,9 +47,9 @@ type User struct {
 // 'Location: "Tokyo"' is default value.
 var UserFactory = factory.NewFactory(
   &User{Location: "Tokyo"},
-).SeqInt("ID", func(n int) (interface{}, error) {
+).SeqInt("ID", func(n int) (any, error) {
   return n, nil
-}).Attr("Name", func(args factory.Args) (interface{}, error) {
+}).Attr("Name", func(args factory.Args) (any, error) {
   user := args.Instance().(*User)
   return fmt.Sprintf("user-%d", user.ID), nil
 })
@@ -102,11 +102,11 @@ func CustomerRepository(i *CustomerInput) *Customer {
 
 var customerFactory = factory.NewFactory(
 	&CustomerInput{},
-).Attr("Name", func(a factory.Args) (interface{}, error) {
+).Attr("Name", func(a factory.Args) (any, error) {
 	return randomdata.FullName(randomdata.RandomGender), nil
 })
 
-func CustomerFactory(opts map[string]interface{}) *factory.Factory {
+func CustomerFactory(opts map[string]any) *factory.Factory {
 	return factory.NewFactory(
 		&Customer{},
 	).OnCreate(func(a factory.Args) error {
@@ -170,11 +170,11 @@ type User struct {
 // 'Location: "Tokyo"' is default value.
 var UserFactory = factory.NewFactory(
   &User{},
-).SeqInt("ID", func(n int) (interface{}, error) {
+).SeqInt("ID", func(n int) (any, error) {
   return n, nil
-}).Attr("Name", func(args factory.Args) (interface{}, error) {
+}).Attr("Name", func(args factory.Args) (any, error) {
   return randomdata.FullName(randomdata.RandomGender), nil
-}).Attr("Location", func(args factory.Args) (interface{}, error) {
+}).Attr("Location", func(args factory.Args) (any, error) {
   return randomdata.City(), nil
 })
 
@@ -218,9 +218,9 @@ type User struct {
 
 var GroupFactory = factory.NewFactory(
   &Group{},
-).SeqInt("ID", func(n int) (interface{}, error) {
+).SeqInt("ID", func(n int) (any, error) {
   return 2 - n%2, nil
-}).Attr("Name", func(args factory.Args) (interface{}, error) {
+}).Attr("Name", func(args factory.Args) (any, error) {
   group := args.Instance().(*Group)
   return fmt.Sprintf("group-%d", group.ID), nil
 })
@@ -228,9 +228,9 @@ var GroupFactory = factory.NewFactory(
 // 'Location: "Tokyo"' is default value.
 var UserFactory = factory.NewFactory(
   &User{Location: "Tokyo"},
-).SeqInt("ID", func(n int) (interface{}, error) {
+).SeqInt("ID", func(n int) (any, error) {
   return n, nil
-}).Attr("Name", func(args factory.Args) (interface{}, error) {
+}).Attr("Name", func(args factory.Args) (any, error) {
   user := args.Instance().(*User)
   return fmt.Sprintf("user-%d", user.ID), nil
 }).SubFactory("Group", GroupFactory)
@@ -276,18 +276,18 @@ type User struct {
 
 var PostFactory = factory.NewFactory(
   &Post{},
-).SeqInt("ID", func(n int) (interface{}, error) {
+).SeqInt("ID", func(n int) (any, error) {
   return n, nil
-}).Attr("Content", func(args factory.Args) (interface{}, error) {
+}).Attr("Content", func(args factory.Args) (any, error) {
   post := args.Instance().(*Post)
   return fmt.Sprintf("post-%d", post.ID), nil
 })
 
 var UserFactory = factory.NewFactory(
   &User{},
-).SeqInt("ID", func(n int) (interface{}, error) {
+).SeqInt("ID", func(n int) (any, error) {
   return n, nil
-}).Attr("Name", func(args factory.Args) (interface{}, error) {
+}).Attr("Name", func(args factory.Args) (any, error) {
   user := args.Instance().(*User)
   return fmt.Sprintf("user-%d", user.ID), nil
 }).SubSliceFactory("Posts", PostFactory, func() int { return 3 })
@@ -342,9 +342,9 @@ var UserFactory = factory.NewFactory(
 )
 
 func init() {
-  UserFactory.SeqInt("ID", func(n int) (interface{}, error) {
+  UserFactory.SeqInt("ID", func(n int) (any, error) {
     return n, nil
-  }).Attr("Name", func(args factory.Args) (interface{}, error) {
+  }).Attr("Name", func(args factory.Args) (any, error) {
     return randomdata.FullName(randomdata.RandomGender), nil
   }).SubRecursiveFactory("CloseFriend", UserFactory, func() int { return 2 }) // recursive depth is always 2
 }
@@ -388,12 +388,12 @@ type Group struct {
 
 var UserFactory = factory.NewFactory(
   &User{},
-).SeqInt("ID", func(n int) (interface{}, error) {
+).SeqInt("ID", func(n int) (any, error) {
   return n, nil
-}).Attr("Name", func(args factory.Args) (interface{}, error) {
+}).Attr("Name", func(args factory.Args) (any, error) {
   user := args.Instance().(*User)
   return fmt.Sprintf("user-%d", user.ID), nil
-}).Attr("Group", func(args factory.Args) (interface{}, error) {
+}).Attr("Group", func(args factory.Args) (any, error) {
   if parent := args.Parent(); parent != nil {
     // if args have parent, use it.
     return parent.Instance(), nil
@@ -403,9 +403,9 @@ var UserFactory = factory.NewFactory(
 
 var GroupFactory = factory.NewFactory(
   &Group{},
-).SeqInt("ID", func(n int) (interface{}, error) {
+).SeqInt("ID", func(n int) (any, error) {
   return 2 - n%2, nil
-}).Attr("Name", func(args factory.Args) (interface{}, error) {
+}).Attr("Name", func(args factory.Args) (any, error) {
   group := args.Instance().(*Group)
   return fmt.Sprintf("group-%d", group.ID), nil
 }).SubSliceFactory("Users", UserFactory, func() int { return 3 })
@@ -431,6 +431,8 @@ Group.ID: 1
 
 ### Here is my intuitive [intergration](https://github.com/hyuti/factory-go/blob/master/examples/integration-with-ent/ent/factory.go) with [ent](https://github.com/ent/ent).
 ## Roadmap
+- 🚧️ Migrate to 1.19 version
+- 🚧️ Image factory
 - 🚧️ Bulk create feature
 - 🚧️ Bulk update feature
 - 🚧️ Bulk delete feature

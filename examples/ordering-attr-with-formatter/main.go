@@ -27,7 +27,7 @@ func GetCustomerByID(id int) *Customer {
 
 var CustomerFactory = factory.NewFactory(
 	&Customer{ID: 1},
-).Attr("Name", func(a factory.Args) (interface{}, error) {
+).Attr("Name", func(a factory.Args) (any, error) {
 	return "foo", nil
 })
 
@@ -36,13 +36,13 @@ var OrderFactory = factory.NewFactory(
 
 // define CustomerID before CustomerName so that CustomerID field is generated before CustomerName
 // user a formatter to retrieve ID from Customer after Customer is created by CustomerFactory
-).SubFactory("CustomerID", CustomerFactory, func(i interface{}) (interface{}, error) {
+).SubFactory("CustomerID", CustomerFactory, func(i any) (any, error) {
 	e, ok := i.(*Customer)
 	if !ok {
 		return nil, fmt.Errorf("unexpected type %t", i)
 	}
 	return e.ID, nil
-}).Attr("CustomerName", func(a factory.Args) (interface{}, error) {
+}).Attr("CustomerName", func(a factory.Args) (any, error) {
 	inst, ok := a.Instance().(*Order)
 	if !ok {
 		return nil, fmt.Errorf("unexpected type %t", a.Instance())

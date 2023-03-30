@@ -15,9 +15,9 @@ type User struct {
 // 'Location: "Tokyo"' is default value.
 var UserFactory = factory.NewFactory(
 	&User{Location: "Tokyo"},
-).SeqInt("ID", func(n int) (interface{}, error) {
+).SeqInt("ID", func(n int) (any, error) {
 	return n, nil
-}).Attr("Name", func(args factory.Args) (interface{}, error) {
+}).Attr("Name", func(args factory.Args) (any, error) {
 	user := args.Instance().(*User)
 	return fmt.Sprintf("user-%d", user.ID), nil
 })

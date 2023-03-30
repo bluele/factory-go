@@ -15,18 +15,18 @@ var (
 
 type (
 	Args interface {
-		Instance() interface{}
+		Instance() any
 		Parent() Args
 		Context() context.Context
 		pipeline(int) *pipeline
 	}
-	Formatter func(interface{}) (interface{}, error)
-	Generator func(Args) (interface{}, error)
+	Formatter func(any) (any, error)
+	Generator func(Args) (any, error)
 	Factory   struct {
 		numField         int
 		curIdx           int
 		isPtr            bool
-		model            interface{}
+		model            any
 		rt               reflect.Type
 		rv               *reflect.Value
 		attrGens         []*attrGenerator
@@ -38,7 +38,7 @@ type (
 
 // NewFactory returns a new factory for specified model class
 // Each generator is applied in the order in which they are declared
-func NewFactory(model interface{}) *Factory {
+func NewFactory(model any) *Factory {
 	fa := &Factory{}
 	fa.model = model
 	fa.nameIndexMap = make(map[string]int)
@@ -48,7 +48,7 @@ func NewFactory(model interface{}) *Factory {
 }
 
 func (fa *Factory) wrapWithFormatter(gen Generator, formatters ...Formatter) Generator {
-	return func(a Args) (interface{}, error) {
+	return func(a Args) (any, error) {
 		ret, err := gen(a)
 		if err != nil {
 			return nil, err
@@ -67,27 +67,27 @@ func (fa *Factory) Attr(name string, gen Generator, formatters ...Formatter) *Fa
 	return fa.fillAttrGen(nil, name, fa.wrapWithFormatter(gen, formatters...))
 }
 
-func (fa *Factory) SeqInt(name string, gen func(int) (interface{}, error), formatters ...Formatter) *Factory {
+func (fa *Factory) SeqInt(name string, gen func(int) (any, error), formatters ...Formatter) *Factory {
 	seq := int64(0)
-	genFunc := func(krgs Args) (interface{}, error) {
+	genFunc := func(krgs Args) (any, error) {
 		new := atomic.AddInt64(&seq, 1)
 		return gen(int(new))
 	}
 	return fa.fillAttrGen(nil, name, fa.wrapWithFormatter(genFunc, formatters...))
 }
 
-func (fa *Factory) SeqInt64(name string, gen func(int64) (interface{}, error), formatters ...Formatter) *Factory {
+func (fa *Factory) SeqInt64(name string, gen func(int64) (any, error), formatters ...Formatter) *Factory {
 	seq := int64(0)
-	genFunc := func(args Args) (interface{}, error) {
+	genFunc := func(args Args) (any, error) {
 		new := atomic.AddInt64(&seq, 1)
 		return gen(new)
 	}
 	return fa.fillAttrGen(nil, name, fa.wrapWithFormatter(genFunc, formatters...))
 }
 
-func (fa *Factory) SeqString(name string, gen func(string) (interface{}, error), formatters ...Formatter) *Factory {
+func (fa *Factory) SeqString(name string, gen func(string) (any, error), formatters ...Formatter) *Factory {
 	seq := int64(0)
-	genFunc := func(args Args) (interface{}, error) {
+	genFunc := func(args Args) (any, error) {
 		new := atomic.AddInt64(&seq, 1)
 		return gen(strconv.FormatInt(new, 10))
 	}
@@ -95,7 +95,7 @@ func (fa *Factory) SeqString(name string, gen func(string) (interface{}, error),
 }
 
 func (fa *Factory) SubFactory(name string, sub *Factory, formatters ...Formatter) *Factory {
-	genFunc := func(args Args) (interface{}, error) {
+	genFunc := func(args Args) (any, error) {
 		pipeline := args.pipeline(fa.numField)
 		ret, err := sub.create(args.Context(), nil, pipeline.Next(args))
 		if err != nil {
@@ -109,7 +109,7 @@ func (fa *Factory) SubFactory(name string, sub *Factory, formatters ...Formatter
 func (fa *Factory) SubSliceFactory(name string, sub *Factory, getSize func() int, formatters ...Formatter) *Factory {
 	idx := fa.checkIdx(name)
 	tp := fa.rt.Field(idx).Type
-	genFunc := func(args Args) (interface{}, error) {
+	genFunc := func(args Args) (any, error) {
 		size := getSize()
 		pipeline := args.pipeline(fa.numField)
 		sv := reflect.MakeSlice(tp, size, size)
@@ -127,7 +127,7 @@ func (fa *Factory) SubSliceFactory(name string, sub *Factory, getSize func() int
 
 func (fa *Factory) SubRecursiveFactory(name string, sub *Factory, getLimit func() int, formatters ...Formatter) *Factory {
 	idx := fa.checkIdx(name)
-	genFunc := func(args Args) (interface{}, error) {
+	genFunc := func(args Args) (any, error) {
 		pl := args.pipeline(fa.numField)
 		if !pl.stacks.Has(idx) {
 			pl.stacks.Set(idx, getLimit())
@@ -147,7 +147,7 @@ func (fa *Factory) SubRecursiveFactory(name string, sub *Factory, getLimit func(
 func (fa *Factory) SubRecursiveSliceFactory(name string, sub *Factory, getSize, getLimit func() int, formatters ...Formatter) *Factory {
 	idx := fa.checkIdx(name)
 	tp := fa.rt.Field(idx).Type
-	genFunc := func(args Args) (interface{}, error) {
+	genFunc := func(args Args) (any, error) {
 		pl := args.pipeline(fa.numField)
 		if !pl.stacks.Has(idx) {
 			pl.stacks.Set(idx, getLimit())
@@ -176,31 +176,31 @@ func (fa *Factory) OnCreate(cb func(Args) error) *Factory {
 	return fa
 }
 
-func (fa *Factory) Create() (interface{}, error) {
+func (fa *Factory) Create() (any, error) {
 	return fa.CreateWithOption(nil)
 }
 
-func (fa *Factory) CreateWithOption(opt map[string]interface{}) (interface{}, error) {
+func (fa *Factory) CreateWithOption(opt map[string]any) (any, error) {
 	return fa.create(context.Background(), opt, nil)
 }
 
-func (fa *Factory) CreateWithContext(ctx context.Context) (interface{}, error) {
+func (fa *Factory) CreateWithContext(ctx context.Context) (any, error) {
 	return fa.create(ctx, nil, nil)
 }
 
-func (fa *Factory) CreateWithContextAndOption(ctx context.Context, opt map[string]interface{}) (interface{}, error) {
+func (fa *Factory) CreateWithContextAndOption(ctx context.Context, opt map[string]any) (any, error) {
 	return fa.create(ctx, opt, nil)
 }
 
-func (fa *Factory) MustCreate() interface{} {
+func (fa *Factory) MustCreate() any {
 	return fa.MustCreateWithOption(nil)
 }
 
-func (fa *Factory) MustCreateWithOption(opt map[string]interface{}) interface{} {
+func (fa *Factory) MustCreateWithOption(opt map[string]any) any {
 	return fa.MustCreateWithContextAndOption(context.Background(), opt)
 }
 
-func (fa *Factory) MustCreateWithContextAndOption(ctx context.Context, opt map[string]interface{}) interface{} {
+func (fa *Factory) MustCreateWithContextAndOption(ctx context.Context, opt map[string]any) any {
 	inst, err := fa.CreateWithContextAndOption(ctx, opt)
 	if err != nil {
 		panic(err)
@@ -213,7 +213,7 @@ Bind values of a new objects to a pointer to struct.
 
 ptr: a pointer to struct
 */
-func (fa *Factory) Construct(ptr interface{}) error {
+func (fa *Factory) Construct(ptr any) error {
 	return fa.ConstructWithOption(ptr, nil)
 }
 
@@ -223,7 +223,7 @@ Bind values of a new objects to a pointer to struct with option.
 ptr: a pointer to struct
 opt: attibute values
 */
-func (fa *Factory) ConstructWithOption(ptr interface{}, opt map[string]interface{}) error {
+func (fa *Factory) ConstructWithOption(ptr any, opt map[string]any) error {
 	return fa.ConstructWithContextAndOption(context.Background(), ptr, opt)
 }
 
@@ -234,7 +234,7 @@ ctx: context object
 ptr: a pointer to struct
 opt: attibute values
 */
-func (fa *Factory) ConstructWithContextAndOption(ctx context.Context, ptr interface{}, opt map[string]interface{}) error {
+func (fa *Factory) ConstructWithContextAndOption(ctx context.Context, ptr any, opt map[string]any) error {
 	pt := reflect.TypeOf(ptr)
 	if pt.Kind() != reflect.Ptr {
 		return errors.New("ptr should be pointer type.")
@@ -289,7 +289,7 @@ func (fa *Factory) modelName() string {
 	return fa.rt.Name()
 }
 
-func (fa *Factory) fillAttrGen(idx *int, name string, gen func(Args) (interface{}, error)) *Factory {
+func (fa *Factory) fillAttrGen(idx *int, name string, gen func(Args) (any, error)) *Factory {
 	if idx == nil {
 		i := fa.checkIdx(name)
 		idx = &i
@@ -324,7 +324,7 @@ func (fa *Factory) fillMissingAttr(ctx context.Context) {
 	}
 }
 
-func (fa *Factory) build(ctx context.Context, inst *reflect.Value, tp reflect.Type, opt map[string]interface{}, pl *pipeline) (interface{}, error) {
+func (fa *Factory) build(ctx context.Context, inst *reflect.Value, tp reflect.Type, opt map[string]any, pl *pipeline) (any, error) {
 	args := &argsStruct{}
 	args.pl = pl
 	args.ctx = ctx
@@ -373,7 +373,7 @@ func (fa *Factory) build(ctx context.Context, inst *reflect.Value, tp reflect.Ty
 	return inst.Interface(), nil
 }
 
-func (fa *Factory) create(ctx context.Context, opt map[string]interface{}, pl *pipeline) (interface{}, error) {
+func (fa *Factory) create(ctx context.Context, opt map[string]any, pl *pipeline) (any, error) {
 	inst := reflect.New(fa.rt).Elem()
 	return fa.build(ctx, &inst, fa.rt, opt, pl)
 }

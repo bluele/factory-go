@@ -17,13 +17,13 @@ type User struct {
 
 var UserFactory = factory.NewFactory(
 	&User{},
-).SeqInt("ID", func(n int) (interface{}, error) {
+).SeqInt("ID", func(n int) (any, error) {
 	return n, nil
 })
 
 func main() {
 	for i := 1; i <= 3; i++ {
-		user := UserFactory.MustCreateWithOption(map[string]interface{}{
+		user := UserFactory.MustCreateWithOption(map[string]any{
 			"Groups": []*Group{
 				{i}, {i + 1},
 			},

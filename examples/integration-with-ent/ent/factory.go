@@ -138,12 +138,12 @@ type (
 
 var customerFactory = factory.NewFactory(
 	&CustomerInput{},
-).Attr("Name", func(a factory.Args) (interface{}, error) {
+).Attr("Name", func(a factory.Args) (any, error) {
 	return randomdata.FullName(randomdata.RandomGender), nil
 })
 var bookFactory = factory.NewFactory(
 	&BookInput{},
-).SubFactory("OwnerID", CustomerFactory(), func(i interface{}) (interface{}, error) {
+).SubFactory("OwnerID", CustomerFactory(), func(i any) (any, error) {
 	e, ok := i.(*Customer)
 	if !ok {
 		return nil, fmt.Errorf("unexpected type %t", i)

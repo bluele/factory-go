@@ -18,9 +18,9 @@ var UserFactory = factory.NewFactory(
 )
 
 func init() {
-	UserFactory.SeqInt("ID", func(n int) (interface{}, error) {
+	UserFactory.SeqInt("ID", func(n int) (any, error) {
 		return n, nil
-	}).Attr("Name", func(args factory.Args) (interface{}, error) {
+	}).Attr("Name", func(args factory.Args) (any, error) {
 		return randomdata.FullName(randomdata.RandomGender), nil
 	}).SubRecursiveFactory("CloseFriend", UserFactory, func() int { return 2 }) // recursive depth is always 2
 }

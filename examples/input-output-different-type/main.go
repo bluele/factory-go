@@ -28,11 +28,11 @@ func CustomerRepository(i *CustomerInput) *Customer {
 
 var customerFactory = factory.NewFactory(
 	&CustomerInput{},
-).Attr("Name", func(a factory.Args) (interface{}, error) {
+).Attr("Name", func(a factory.Args) (any, error) {
 	return randomdata.FullName(randomdata.RandomGender), nil
 })
 
-func CustomerFactory(opts map[string]interface{}) *factory.Factory {
+func CustomerFactory(opts map[string]any) *factory.Factory {
 	return factory.NewFactory(
 		&Customer{},
 	).OnCreate(func(a factory.Args) error {

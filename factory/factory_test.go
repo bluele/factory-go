@@ -18,10 +18,10 @@ func TestFactory(t *testing.T) {
 	}
 
 	userFactory := NewFactory(&User{Location: "Tokyo"}).
-		SeqInt("ID", func(n int) (interface{}, error) {
+		SeqInt("ID", func(n int) (any, error) {
 			return n, nil
 		}).
-		Attr("Name", func(args Args) (interface{}, error) {
+		Attr("Name", func(args Args) (any, error) {
 			return "hyuti", nil
 		})
 
@@ -54,10 +54,10 @@ func TestMapAttrFactory(t *testing.T) {
 		Ext map[string]string
 	}
 	var userFactory = NewFactory(&User{}).
-		SeqInt("ID", func(n int) (interface{}, error) {
+		SeqInt("ID", func(n int) (any, error) {
 			return n, nil
 		}).
-		Attr("Ext", func(args Args) (interface{}, error) {
+		Attr("Ext", func(args Args) (any, error) {
 			return map[string]string{"test": "ok"}, nil
 		})
 	user := &User{}
@@ -86,15 +86,15 @@ func TestSubFactory(t *testing.T) {
 	}
 
 	groupFactory := NewFactory(&Group{}).
-		SeqInt("ID", func(n int) (interface{}, error) {
+		SeqInt("ID", func(n int) (any, error) {
 			return n, nil
 		})
 
 	userFactory := NewFactory(&User{}).
-		SeqInt("ID", func(n int) (interface{}, error) {
+		SeqInt("ID", func(n int) (any, error) {
 			return n, nil
 		}).
-		Attr("Name", func(args Args) (interface{}, error) {
+		Attr("Name", func(args Args) (any, error) {
 			return "hyuti", nil
 		}).
 		SubFactory("Group", groupFactory)
@@ -131,15 +131,15 @@ func TestSubSliceFactory(t *testing.T) {
 	}
 
 	groupFactory := NewFactory(&Group{}).
-		SeqInt("ID", func(n int) (interface{}, error) {
+		SeqInt("ID", func(n int) (any, error) {
 			return n, nil
 		})
 
 	userFactory := NewFactory(&User{}).
-		SeqInt("ID", func(n int) (interface{}, error) {
+		SeqInt("ID", func(n int) (any, error) {
 			return n, nil
 		}).
-		Attr("Name", func(args Args) (interface{}, error) {
+		Attr("Name", func(args Args) (any, error) {
 			return "hyuti", nil
 		}).
 		SubSliceFactory("Groups", groupFactory, func() int { return 3 })
@@ -181,10 +181,10 @@ func TestSubRecursiveFactory(t *testing.T) {
 
 	var userFactory = NewFactory(&User{})
 	userFactory.
-		SeqInt("ID", func(n int) (interface{}, error) {
+		SeqInt("ID", func(n int) (any, error) {
 			return n, nil
 		}).
-		Attr("Name", func(args Args) (interface{}, error) {
+		Attr("Name", func(args Args) (any, error) {
 			return "hyuti", nil
 		}).
 		SubRecursiveFactory("Friend", userFactory, func() int { return 2 })
@@ -218,10 +218,10 @@ func TestFactoryConstruction(t *testing.T) {
 	}
 
 	var userFactory = NewFactory(&User{}).
-		SeqInt("ID", func(n int) (interface{}, error) {
+		SeqInt("ID", func(n int) (any, error) {
 			return n, nil
 		}).
-		Attr("Name", func(args Args) (interface{}, error) {
+		Attr("Name", func(args Args) (any, error) {
 			return "hyuti", nil
 		})
 
@@ -240,7 +240,7 @@ func TestFactoryConstruction(t *testing.T) {
 	}
 
 	user = &User{}
-	if err := userFactory.ConstructWithOption(user, map[string]interface{}{"Name": "jun"}); err != nil {
+	if err := userFactory.ConstructWithOption(user, map[string]any{"Name": "jun"}); err != nil {
 		t.Error(err)
 		return
 	}
@@ -260,7 +260,7 @@ func TestFactoryWhenCallArgsParent(t *testing.T) {
 
 	var userFactory = NewFactory(&User{})
 	userFactory.
-		Attr("Name", func(args Args) (interface{}, error) {
+		Attr("Name", func(args Args) (any, error) {
 			if parent := args.Parent(); parent != nil {
 				if pUser, ok := parent.Instance().(*User); ok {
 					return pUser.GroupUUID, nil
@@ -289,7 +289,7 @@ func TestFactoryWithOptions(t *testing.T) {
 	)
 
 	var userFactory = NewFactory(&User{})
-	user := userFactory.MustCreateWithOption(map[string]interface{}{
+	user := userFactory.MustCreateWithOption(map[string]any{
 		"ID":          1,
 		"Name":        "hyuti",
 		"Group1.Name": "programmer",
@@ -325,7 +325,7 @@ func TestFactoryMuctCreateWithContextAndOptions(t *testing.T) {
 	var userFactory = NewFactory(&User{})
 
 	t.Run("with valid options", func(t *testing.T) {
-		user := userFactory.MustCreateWithContextAndOption(context.Background(), map[string]interface{}{
+		user := userFactory.MustCreateWithContextAndOption(context.Background(), map[string]any{
 			"ID":   1,
 			"Name": "hyuti",
 		}).(*User)
@@ -346,19 +346,19 @@ func TestFactoryMuctCreateWithContextAndOptions(t *testing.T) {
 			}
 		}()
 
-		userFactory.MustCreateWithContextAndOption(context.Background(), map[string]interface{}{
+		userFactory.MustCreateWithContextAndOption(context.Background(), map[string]any{
 			"ID":   1,
 			"Name": 3,
 		})
 	})
 
 	t.Run("with filled context", func(t *testing.T) {
-		userFactory := NewFactory(&User{}).Attr("Name", func(args Args) (interface{}, error) {
+		userFactory := NewFactory(&User{}).Attr("Name", func(args Args) (any, error) {
 			return args.Context().Value(nameField), nil
 		})
 
 		ctx := context.WithValue(context.Background(), nameField, "hyuti from ctx")
-		user := userFactory.MustCreateWithContextAndOption(ctx, map[string]interface{}{
+		user := userFactory.MustCreateWithContextAndOption(ctx, map[string]any{
 			"ID": 1,
 		}).(*User)
 
@@ -368,7 +368,7 @@ func TestFactoryMuctCreateWithContextAndOptions(t *testing.T) {
 	})
 
 	t.Run("with nil context", func(t *testing.T) {
-		userFactory := NewFactory(&User{}).Attr("Name", func(args Args) (interface{}, error) {
+		userFactory := NewFactory(&User{}).Attr("Name", func(args Args) (any, error) {
 			return args.Context().Value(nameField), nil
 		})
 
@@ -378,7 +378,7 @@ func TestFactoryMuctCreateWithContextAndOptions(t *testing.T) {
 			}
 		}()
 
-		userFactory.MustCreateWithContextAndOption(nil, map[string]interface{}{
+		userFactory.MustCreateWithContextAndOption(nil, map[string]any{
 			"ID": 1,
 		})
 	})
@@ -391,10 +391,10 @@ func TestFactorySeqConcurrency(t *testing.T) {
 	}
 
 	var userFactory = NewFactory(&User{}).
-		SeqInt("ID", func(n int) (interface{}, error) {
+		SeqInt("ID", func(n int) (any, error) {
 			return n, nil
 		}).
-		SeqString("Name", func(s string) (interface{}, error) {
+		SeqString("Name", func(s string) (any, error) {
 			return "user-" + s, nil
 		})
 
@@ -442,7 +442,7 @@ func TestFactorySeqIntStartsAt1(t *testing.T) {
 	}
 
 	var userFactory = NewFactory(&User{}).
-		SeqInt("ID", func(n int) (interface{}, error) {
+		SeqInt("ID", func(n int) (any, error) {
 			return n, nil
 		})
 
@@ -462,7 +462,7 @@ func TestFactorySeqInt64StartsAt1(t *testing.T) {
 	}
 
 	var userFactory = NewFactory(&User{}).
-		SeqInt64("ID", func(n int64) (interface{}, error) {
+		SeqInt64("ID", func(n int64) (any, error) {
 			return n, nil
 		})
 
@@ -482,7 +482,7 @@ func TestFactorySeqStringStartsAt1(t *testing.T) {
 	}
 
 	var userFactory = NewFactory(&User{}).
-		SeqString("Name", func(s string) (interface{}, error) {
+		SeqString("Name", func(s string) (any, error) {
 			return s, nil
 		})
 
@@ -531,10 +531,10 @@ func TestCreate(t *testing.T) {
 					Bar    int
 				}
 				fooFactory := NewFactory(&Foo{}).
-					Attr("Bar", func(a Args) (interface{}, error) {
+					Attr("Bar", func(a Args) (any, error) {
 						return 0, nil
 					}).
-					Attr("FooBar", func(a Args) (interface{}, error) {
+					Attr("FooBar", func(a Args) (any, error) {
 						return "foobar", nil
 					})
 				_, err := fooFactory.create(ctx, nil, nil)
@@ -553,10 +553,10 @@ func TestCreate(t *testing.T) {
 					BarFoo int
 				}
 				fooFactory := NewFactory(&Foo{}).
-					Attr("Bar", func(a Args) (interface{}, error) {
+					Attr("Bar", func(a Args) (any, error) {
 						return 0, nil
 					}).
-					Attr("FooBar", func(a Args) (interface{}, error) {
+					Attr("FooBar", func(a Args) (any, error) {
 						return "foobar", nil
 					})
 				_, err := fooFactory.create(ctx, nil, nil)
@@ -596,7 +596,7 @@ func TestFormatter(t *testing.T) {
 				}
 				barFactory := NewFactory(&Bar{ID: 1})
 				fooFactory := NewFactory(&Foo{}).
-					SubFactory("BarID", barFactory, func(i interface{}) (interface{}, error) {
+					SubFactory("BarID", barFactory, func(i any) (any, error) {
 						inst, ok := i.(*Bar)
 						if !ok {
 							return nil, fmt.Errorf("unexpected type %t", i)
@@ -618,9 +618,9 @@ func TestFormatter(t *testing.T) {
 					Foo string
 				}
 				barFactory := NewFactory(&Bar{}).
-					Attr("Foo", func(a Args) (interface{}, error) {
+					Attr("Foo", func(a Args) (any, error) {
 						return "foo", nil
-					}, func(i interface{}) (interface{}, error) {
+					}, func(i any) (any, error) {
 						inst, ok := i.(string)
 						if !ok {
 							return nil, fmt.Errorf("unexpected type %t", i)

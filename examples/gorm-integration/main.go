@@ -22,9 +22,9 @@ type User struct {
 
 var UserFactory = factory.NewFactory(
 	&User{},
-).SeqInt("ID", func(n int) (interface{}, error) {
+).SeqInt("ID", func(n int) (any, error) {
 	return n, nil
-}).Attr("Name", func(args factory.Args) (interface{}, error) {
+}).Attr("Name", func(args factory.Args) (any, error) {
 	user := args.Instance().(*User)
 	return fmt.Sprintf("user-%d", user.ID), nil
 }).OnCreate(func(args factory.Args) error {
@@ -34,9 +34,9 @@ var UserFactory = factory.NewFactory(
 
 var GroupFactory = factory.NewFactory(
 	&Group{},
-).SeqInt("ID", func(n int) (interface{}, error) {
+).SeqInt("ID", func(n int) (any, error) {
 	return n, nil
-}).Attr("Name", func(args factory.Args) (interface{}, error) {
+}).Attr("Name", func(args factory.Args) (any, error) {
 	group := args.Instance().(*Group)
 	return fmt.Sprintf("group-%d", group.ID), nil
 }).OnCreate(func(args factory.Args) error {
