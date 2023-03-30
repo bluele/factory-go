@@ -431,11 +431,11 @@ Group.ID: 1
 
 ### Here is my intuitive [intergration](https://github.com/hyuti/factory-go/blob/master/examples/integration-with-ent/ent/factory.go) with [ent](https://github.com/ent/ent).
 ## Roadmap
-- 🚧️ Migrate to 1.19 version
-- 🚧️ Image factory
+- 🚧️ File factory
 - 🚧️ Bulk create feature
 - 🚧️ Bulk update feature
 - 🚧️ Bulk delete feature
+
 ## Persistent models
 
 Currently this project has no support for directly integration with ORM like [gorm](https://github.com/jinzhu/gorm), so you need to do manually.

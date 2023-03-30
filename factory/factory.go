@@ -3,6 +3,8 @@ package factory
 import (
 	"context"
 	"errors"
+	"fmt"
+	"os"
 	"reflect"
 	"strconv"
 	"sync/atomic"
@@ -11,15 +13,18 @@ import (
 var (
 	TagName    = "factory"
 	emptyValue = reflect.Value{}
+	defaultDir = "temp"
 )
 
+//go:generate mockgen -source=factory.go -destination=factory_mocks.go -package=factory
+type Args interface {
+	Instance() any
+	Parent() Args
+	Context() context.Context
+	pipeline(int) *pipeline
+}
+
 type (
-	Args interface {
-		Instance() any
-		Parent() Args
-		Context() context.Context
-		pipeline(int) *pipeline
-	}
 	Formatter func(any) (any, error)
 	Generator func(Args) (any, error)
 	Factory   struct {
@@ -33,6 +38,7 @@ type (
 		orderingAttrGens []*attrGenerator
 		nameIndexMap     map[string]int // pair for attribute name and field index.
 		onCreate         func(Args) error
+		filesCreated     []string
 	}
 )
 
@@ -42,6 +48,7 @@ func NewFactory(model any) *Factory {
 	fa := &Factory{}
 	fa.model = model
 	fa.nameIndexMap = make(map[string]int)
+	fa.filesCreated = make([]string, 0)
 
 	fa.init()
 	return fa
@@ -65,6 +72,52 @@ func (fa *Factory) wrapWithFormatter(gen Generator, formatters ...Formatter) Gen
 
 func (fa *Factory) Attr(name string, gen Generator, formatters ...Formatter) *Factory {
 	return fa.fillAttrGen(nil, name, fa.wrapWithFormatter(gen, formatters...))
+}
+
+// Png function is a shortcut for creating png files. No file name is required.
+// For specifying file name, see File function
+func (fa *Factory) Png(name string, gen func(*os.File) (any, error), formatters ...Formatter) *Factory {
+	return fa.File(name, "png", gen, formatters...)
+}
+
+// Jpg function is a shortcut for creating jpg files. No file name is required.
+// For specifying file name, see File function
+func (fa *Factory) Jpg(name string, gen func(*os.File) (any, error), formatters ...Formatter) *Factory {
+	return fa.File(name, "jpg", gen, formatters...)
+}
+
+// Default directory containing temporary files is "dir" directory at the same level of directory executing commands.
+// ext is extension eg "txt", "bat", "xlsx", etc
+func (fa *Factory) File(name, ext string, gen func(*os.File) (any, error), formatters ...Formatter) *Factory {
+	return fa.FileWithDir(name, ext, defaultDir, gen, formatters...)
+}
+
+// Remove all temporary files if existed
+func (fa *Factory) Clean() {
+	for _, n := range fa.filesCreated {
+		os.Remove(n)
+	}
+	// TODO: this implementation needs a more optimal memory alternative because it leaves lots of memory unused after assigning to nil
+	fa.filesCreated = nil
+}
+
+// You should call Clean function in defer after invoking FileWithDir function (See Clean) to clean all unused files.
+// Otherwise, files will not be removed
+func (fa *Factory) FileWithDir(name, ext, dir string, gen func(*os.File) (any, error), formatters ...Formatter) *Factory {
+	file := fmt.Sprintf("*.%s", ext)
+	genFunc := func(krgs Args) (any, error) {
+		f, err := os.CreateTemp(dir, file)
+		if err != nil {
+			return nil, err
+		}
+		_, err = gen(f)
+		if err != nil {
+			return nil, err
+		}
+		fa.filesCreated = append(fa.filesCreated, f.Name())
+		return f.Name(), nil
+	}
+	return fa.fillAttrGen(nil, name, fa.wrapWithFormatter(genFunc, formatters...))
 }
 
 func (fa *Factory) SeqInt(name string, gen func(int) (any, error), formatters ...Formatter) *Factory {
@@ -237,7 +290,7 @@ opt: attibute values
 func (fa *Factory) ConstructWithContextAndOption(ctx context.Context, ptr any, opt map[string]any) error {
 	pt := reflect.TypeOf(ptr)
 	if pt.Kind() != reflect.Ptr {
-		return errors.New("ptr should be pointer type.")
+		return errors.New("ptr should be pointer type")
 	}
 	pt = pt.Elem()
 	if pt.Name() != fa.modelName() {
@@ -316,7 +369,7 @@ func (fa *Factory) getOrderingIdx() int {
 	return idx
 }
 
-func (fa *Factory) fillMissingAttr(ctx context.Context) {
+func (fa *Factory) fillMissingAttr(_ context.Context) {
 	for _, attr := range fa.attrGens {
 		if !attr.isFilled {
 			fa.fillAttrGen(nil, attr.key, attr.genFunc)

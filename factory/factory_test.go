@@ -2,19 +2,21 @@ package factory
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
 	"sync"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestFactory(t *testing.T) {
 	type User struct {
-		ID         int
-		Name       string
-		Location   string
-		unexported string
+		ID       int
+		Name     string
+		Location string
 	}
 
 	userFactory := NewFactory(&User{Location: "Tokyo"}).
@@ -640,6 +642,114 @@ func TestFormatter(t *testing.T) {
 			ctx := context.Background()
 			tt.setUp(t, ctx)
 			tt.expect(t, ctx)
+		})
+	}
+}
+
+func TestFileWithDir(t *testing.T) {
+	t.Parallel()
+	type kitTest struct {
+		gen  func(*os.File) (any, error)
+		ctrl *gomock.Controller
+		args *MockArgs
+	}
+	tests := [...]struct {
+		name     string
+		setUp    func(*testing.T) *kitTest
+		expect   func(*testing.T, *kitTest)
+		tearDown func(*testing.T, *kitTest)
+	}{
+		{
+			name: "create unsuccess",
+			setUp: func(t *testing.T) *kitTest {
+				gen := func(f *os.File) (any, error) {
+					return f, errors.New("foo")
+				}
+				ctrl := gomock.NewController(t)
+				args := NewMockArgs(ctrl)
+				return &kitTest{
+					gen:  gen,
+					ctrl: ctrl,
+					args: args,
+				}
+			},
+			expect: func(t *testing.T, kt *kitTest) {
+				type foobar struct {
+					foo string
+				}
+				f := NewFactory(&foobar{})
+				f = f.FileWithDir("foo", "txt", "temp", kt.gen)
+				_, err := f.orderingAttrGens[0].genFunc(kt.args)
+				require.NotNil(t, err)
+			},
+			tearDown: func(t *testing.T, kt *kitTest) {
+				kt.ctrl.Finish()
+			},
+		},
+		{
+			name: "create success",
+			setUp: func(t *testing.T) *kitTest {
+				gen := func(f *os.File) (any, error) {
+					return f, nil
+				}
+				ctrl := gomock.NewController(t)
+				args := NewMockArgs(ctrl)
+				return &kitTest{
+					gen:  gen,
+					ctrl: ctrl,
+					args: args,
+				}
+			},
+			expect: func(t *testing.T, kt *kitTest) {
+				type foobar struct {
+					foo string
+				}
+				f := NewFactory(&foobar{})
+				f = f.FileWithDir("foo", "txt", "temp", kt.gen)
+				fn, err := f.orderingAttrGens[0].genFunc(kt.args)
+				require.Nil(t, err)
+				require.Contains(t, fn, ".txt")
+			},
+			tearDown: func(t *testing.T, kt *kitTest) {
+				kt.ctrl.Finish()
+			},
+		},
+		{
+			name: "clean",
+			setUp: func(t *testing.T) *kitTest {
+				gen := func(f *os.File) (any, error) {
+					return f, nil
+				}
+				ctrl := gomock.NewController(t)
+				args := NewMockArgs(ctrl)
+				return &kitTest{
+					gen:  gen,
+					ctrl: ctrl,
+					args: args,
+				}
+			},
+			expect: func(t *testing.T, kt *kitTest) {
+				type foobar struct {
+					foo string
+				}
+				f := NewFactory(&foobar{})
+				f = f.FileWithDir("foo", "txt", "temp", kt.gen)
+				fnAny, _ := f.orderingAttrGens[0].genFunc(kt.args)
+				fn, _ := fnAny.(string)
+				f.Clean()
+				err := os.Remove(fn)
+				require.NotNil(t, err)
+			},
+			tearDown: func(t *testing.T, kt *kitTest) {
+				kt.ctrl.Finish()
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			kt := tt.setUp(t)
+			tt.expect(t, kt)
+			tt.tearDown(t, kt)
 		})
 	}
 }
