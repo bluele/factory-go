@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/Pallinder/go-randomdata"
-	"github.com/bluele/factory-go/factory"
+	"github.com/hyuti/factory-go/factory"
 )
 
 type User struct {
@@ -14,11 +15,11 @@ type User struct {
 
 var UserFactory = factory.NewFactory(
 	&User{},
-).SeqInt("ID", func(n int) (interface{}, error) {
+).SeqInt("ID", func(n int) (any, error) {
 	return n, nil
-}).Attr("Name", func(args factory.Args) (interface{}, error) {
+}).Attr("Name", func(args factory.Args) (any, error) {
 	return randomdata.FullName(randomdata.RandomGender), nil
-}).Attr("Location", func(args factory.Args) (interface{}, error) {
+}).Attr("Location", func(args factory.Args) (any, error) {
 	return randomdata.City(), nil
 })
 

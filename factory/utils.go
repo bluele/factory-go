@@ -13,7 +13,7 @@ func getAttrName(sf reflect.StructField, tagName string) string {
 	return sf.Name
 }
 
-func setValueWithAttrPath(inst *reflect.Value, tp reflect.Type, attr string, v interface{}) bool {
+func setValueWithAttrPath(inst *reflect.Value, tp reflect.Type, attr string, v any) bool {
 	attrs := strings.Split(attr, ".")
 	if len(attrs) <= 1 {
 		return false

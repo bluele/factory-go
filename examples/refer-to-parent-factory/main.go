@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/bluele/factory-go/factory"
+
+	"github.com/hyuti/factory-go/factory"
 )
 
 type User struct {
@@ -19,12 +20,12 @@ type Group struct {
 
 var UserFactory = factory.NewFactory(
 	&User{},
-).SeqInt("ID", func(n int) (interface{}, error) {
+).SeqInt("ID", func(n int) (any, error) {
 	return n, nil
-}).Attr("Name", func(args factory.Args) (interface{}, error) {
+}).Attr("Name", func(args factory.Args) (any, error) {
 	user := args.Instance().(*User)
 	return fmt.Sprintf("user-%d", user.ID), nil
-}).Attr("Group", func(args factory.Args) (interface{}, error) {
+}).Attr("Group", func(args factory.Args) (any, error) {
 	if parent := args.Parent(); parent != nil {
 		// if args have parent, use it.
 		return parent.Instance(), nil
@@ -34,9 +35,9 @@ var UserFactory = factory.NewFactory(
 
 var GroupFactory = factory.NewFactory(
 	&Group{},
-).SeqInt("ID", func(n int) (interface{}, error) {
+).SeqInt("ID", func(n int) (any, error) {
 	return 2 - n%2, nil
-}).Attr("Name", func(args factory.Args) (interface{}, error) {
+}).Attr("Name", func(args factory.Args) (any, error) {
 	group := args.Instance().(*Group)
 	return fmt.Sprintf("group-%d", group.ID), nil
 }).SubSliceFactory("Users", UserFactory, func() int { return 3 })

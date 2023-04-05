@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/bluele/factory-go/factory"
+
+	"github.com/hyuti/factory-go/factory"
 )
 
 type Group struct {
@@ -19,9 +20,9 @@ type User struct {
 
 var GroupFactory = factory.NewFactory(
 	&Group{},
-).SeqInt("ID", func(n int) (interface{}, error) {
+).SeqInt("ID", func(n int) (any, error) {
 	return 2 - n%2, nil
-}).Attr("Name", func(args factory.Args) (interface{}, error) {
+}).Attr("Name", func(args factory.Args) (any, error) {
 	group := args.Instance().(*Group)
 	return fmt.Sprintf("group-%d", group.ID), nil
 })
@@ -29,9 +30,9 @@ var GroupFactory = factory.NewFactory(
 // 'Location: "Tokyo"' is default value.
 var UserFactory = factory.NewFactory(
 	&User{Location: "Tokyo"},
-).SeqInt("ID", func(n int) (interface{}, error) {
+).SeqInt("ID", func(n int) (any, error) {
 	return n, nil
-}).Attr("Name", func(args factory.Args) (interface{}, error) {
+}).Attr("Name", func(args factory.Args) (any, error) {
 	user := args.Instance().(*User)
 	return fmt.Sprintf("user-%d", user.ID), nil
 }).SubFactory("Group", GroupFactory)

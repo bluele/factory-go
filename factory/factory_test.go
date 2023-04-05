@@ -2,24 +2,29 @@ package factory
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"os"
 	"sync"
 	"testing"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFactory(t *testing.T) {
 	type User struct {
-		ID         int
-		Name       string
-		Location   string
-		unexported string
+		ID       int
+		Name     string
+		Location string
 	}
 
 	userFactory := NewFactory(&User{Location: "Tokyo"}).
-		SeqInt("ID", func(n int) (interface{}, error) {
+		SeqInt("ID", func(n int) (any, error) {
 			return n, nil
 		}).
-		Attr("Name", func(args Args) (interface{}, error) {
-			return "bluele", nil
+		Attr("Name", func(args Args) (any, error) {
+			return "hyuti", nil
 		})
 
 	iuser, err := userFactory.Create()
@@ -35,8 +40,8 @@ func TestFactory(t *testing.T) {
 		t.Error("user.ID should be 1.")
 		return
 	}
-	if user.Name != "bluele" {
-		t.Error(`user.Name should be "bluele".`)
+	if user.Name != "hyuti" {
+		t.Error(`user.Name should be "hyuti".`)
 		return
 	}
 	if user.Location != "Tokyo" {
@@ -51,10 +56,10 @@ func TestMapAttrFactory(t *testing.T) {
 		Ext map[string]string
 	}
 	var userFactory = NewFactory(&User{}).
-		SeqInt("ID", func(n int) (interface{}, error) {
+		SeqInt("ID", func(n int) (any, error) {
 			return n, nil
 		}).
-		Attr("Ext", func(args Args) (interface{}, error) {
+		Attr("Ext", func(args Args) (any, error) {
 			return map[string]string{"test": "ok"}, nil
 		})
 	user := &User{}
@@ -83,16 +88,16 @@ func TestSubFactory(t *testing.T) {
 	}
 
 	groupFactory := NewFactory(&Group{}).
-		SeqInt("ID", func(n int) (interface{}, error) {
+		SeqInt("ID", func(n int) (any, error) {
 			return n, nil
 		})
 
 	userFactory := NewFactory(&User{}).
-		SeqInt("ID", func(n int) (interface{}, error) {
+		SeqInt("ID", func(n int) (any, error) {
 			return n, nil
 		}).
-		Attr("Name", func(args Args) (interface{}, error) {
-			return "bluele", nil
+		Attr("Name", func(args Args) (any, error) {
+			return "hyuti", nil
 		}).
 		SubFactory("Group", groupFactory)
 
@@ -128,16 +133,16 @@ func TestSubSliceFactory(t *testing.T) {
 	}
 
 	groupFactory := NewFactory(&Group{}).
-		SeqInt("ID", func(n int) (interface{}, error) {
+		SeqInt("ID", func(n int) (any, error) {
 			return n, nil
 		})
 
 	userFactory := NewFactory(&User{}).
-		SeqInt("ID", func(n int) (interface{}, error) {
+		SeqInt("ID", func(n int) (any, error) {
 			return n, nil
 		}).
-		Attr("Name", func(args Args) (interface{}, error) {
-			return "bluele", nil
+		Attr("Name", func(args Args) (any, error) {
+			return "hyuti", nil
 		}).
 		SubSliceFactory("Groups", groupFactory, func() int { return 3 })
 
@@ -178,11 +183,11 @@ func TestSubRecursiveFactory(t *testing.T) {
 
 	var userFactory = NewFactory(&User{})
 	userFactory.
-		SeqInt("ID", func(n int) (interface{}, error) {
+		SeqInt("ID", func(n int) (any, error) {
 			return n, nil
 		}).
-		Attr("Name", func(args Args) (interface{}, error) {
-			return "bluele", nil
+		Attr("Name", func(args Args) (any, error) {
+			return "hyuti", nil
 		}).
 		SubRecursiveFactory("Friend", userFactory, func() int { return 2 })
 
@@ -215,11 +220,11 @@ func TestFactoryConstruction(t *testing.T) {
 	}
 
 	var userFactory = NewFactory(&User{}).
-		SeqInt("ID", func(n int) (interface{}, error) {
+		SeqInt("ID", func(n int) (any, error) {
 			return n, nil
 		}).
-		Attr("Name", func(args Args) (interface{}, error) {
-			return "bluele", nil
+		Attr("Name", func(args Args) (any, error) {
+			return "hyuti", nil
 		})
 
 	var user *User
@@ -237,7 +242,7 @@ func TestFactoryConstruction(t *testing.T) {
 	}
 
 	user = &User{}
-	if err := userFactory.ConstructWithOption(user, map[string]interface{}{"Name": "jun"}); err != nil {
+	if err := userFactory.ConstructWithOption(user, map[string]any{"Name": "jun"}); err != nil {
 		t.Error(err)
 		return
 	}
@@ -257,7 +262,7 @@ func TestFactoryWhenCallArgsParent(t *testing.T) {
 
 	var userFactory = NewFactory(&User{})
 	userFactory.
-		Attr("Name", func(args Args) (interface{}, error) {
+		Attr("Name", func(args Args) (any, error) {
 			if parent := args.Parent(); parent != nil {
 				if pUser, ok := parent.Instance().(*User); ok {
 					return pUser.GroupUUID, nil
@@ -286,9 +291,9 @@ func TestFactoryWithOptions(t *testing.T) {
 	)
 
 	var userFactory = NewFactory(&User{})
-	user := userFactory.MustCreateWithOption(map[string]interface{}{
+	user := userFactory.MustCreateWithOption(map[string]any{
 		"ID":          1,
-		"Name":        "bluele",
+		"Name":        "hyuti",
 		"Group1.Name": "programmer",
 		"Group2.Name": "web",
 	}).(*User)
@@ -297,8 +302,8 @@ func TestFactoryWithOptions(t *testing.T) {
 		t.Errorf("user.ID should be 1, not %v", user.ID)
 	}
 
-	if user.Name != "bluele" {
-		t.Errorf("user.Name should be bluele, not %v", user.Name)
+	if user.Name != "hyuti" {
+		t.Errorf("user.Name should be hyuti, not %v", user.Name)
 	}
 
 	if user.Group1.Name != "programmer" {
@@ -322,17 +327,17 @@ func TestFactoryMuctCreateWithContextAndOptions(t *testing.T) {
 	var userFactory = NewFactory(&User{})
 
 	t.Run("with valid options", func(t *testing.T) {
-		user := userFactory.MustCreateWithContextAndOption(context.Background(), map[string]interface{}{
+		user := userFactory.MustCreateWithContextAndOption(context.Background(), map[string]any{
 			"ID":   1,
-			"Name": "bluele",
+			"Name": "hyuti",
 		}).(*User)
 
 		if user.ID != 1 {
 			t.Errorf("user.ID should be 1, not %v", user.ID)
 		}
 
-		if user.Name != "bluele" {
-			t.Errorf("user.Name should be bluele, not %v", user.Name)
+		if user.Name != "hyuti" {
+			t.Errorf("user.Name should be hyuti, not %v", user.Name)
 		}
 	})
 
@@ -343,29 +348,29 @@ func TestFactoryMuctCreateWithContextAndOptions(t *testing.T) {
 			}
 		}()
 
-		userFactory.MustCreateWithContextAndOption(context.Background(), map[string]interface{}{
+		userFactory.MustCreateWithContextAndOption(context.Background(), map[string]any{
 			"ID":   1,
 			"Name": 3,
 		})
 	})
 
 	t.Run("with filled context", func(t *testing.T) {
-		userFactory := NewFactory(&User{}).Attr("Name", func(args Args) (interface{}, error) {
+		userFactory := NewFactory(&User{}).Attr("Name", func(args Args) (any, error) {
 			return args.Context().Value(nameField), nil
 		})
 
-		ctx := context.WithValue(context.Background(), nameField, "bluele from ctx")
-		user := userFactory.MustCreateWithContextAndOption(ctx, map[string]interface{}{
+		ctx := context.WithValue(context.Background(), nameField, "hyuti from ctx")
+		user := userFactory.MustCreateWithContextAndOption(ctx, map[string]any{
 			"ID": 1,
 		}).(*User)
 
-		if user.Name != "bluele from ctx" {
-			t.Errorf("user.Name should be bluele from ctx, not %v", user.Name)
+		if user.Name != "hyuti from ctx" {
+			t.Errorf("user.Name should be hyuti from ctx, not %v", user.Name)
 		}
 	})
 
 	t.Run("with nil context", func(t *testing.T) {
-		userFactory := NewFactory(&User{}).Attr("Name", func(args Args) (interface{}, error) {
+		userFactory := NewFactory(&User{}).Attr("Name", func(args Args) (any, error) {
 			return args.Context().Value(nameField), nil
 		})
 
@@ -375,7 +380,7 @@ func TestFactoryMuctCreateWithContextAndOptions(t *testing.T) {
 			}
 		}()
 
-		userFactory.MustCreateWithContextAndOption(nil, map[string]interface{}{
+		userFactory.MustCreateWithContextAndOption(nil, map[string]any{
 			"ID": 1,
 		})
 	})
@@ -388,10 +393,10 @@ func TestFactorySeqConcurrency(t *testing.T) {
 	}
 
 	var userFactory = NewFactory(&User{}).
-		SeqInt("ID", func(n int) (interface{}, error) {
+		SeqInt("ID", func(n int) (any, error) {
 			return n, nil
 		}).
-		SeqString("Name", func(s string) (interface{}, error) {
+		SeqString("Name", func(s string) (any, error) {
 			return "user-" + s, nil
 		})
 
@@ -439,7 +444,7 @@ func TestFactorySeqIntStartsAt1(t *testing.T) {
 	}
 
 	var userFactory = NewFactory(&User{}).
-		SeqInt("ID", func(n int) (interface{}, error) {
+		SeqInt("ID", func(n int) (any, error) {
 			return n, nil
 		})
 
@@ -459,7 +464,7 @@ func TestFactorySeqInt64StartsAt1(t *testing.T) {
 	}
 
 	var userFactory = NewFactory(&User{}).
-		SeqInt64("ID", func(n int64) (interface{}, error) {
+		SeqInt64("ID", func(n int64) (any, error) {
 			return n, nil
 		})
 
@@ -479,7 +484,7 @@ func TestFactorySeqStringStartsAt1(t *testing.T) {
 	}
 
 	var userFactory = NewFactory(&User{}).
-		SeqString("Name", func(s string) (interface{}, error) {
+		SeqString("Name", func(s string) (any, error) {
 			return s, nil
 		})
 
@@ -490,5 +495,261 @@ func TestFactorySeqStringStartsAt1(t *testing.T) {
 
 	if name := user.(*User).Name; name != "1" {
 		t.Errorf("the starting number for SeqString was %s, not 1", name)
+	}
+}
+
+// this func tests create, not Create function which is exported one.
+func TestCreate(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name   string
+		setUp  func(*testing.T, context.Context)
+		expect func(*testing.T, context.Context)
+	}{
+		{
+			name:  "client not defines any attr gen",
+			setUp: func(t *testing.T, ctx context.Context) {},
+			expect: func(t *testing.T, ctx context.Context) {
+				type Foo struct {
+					Bar int
+				}
+				fooFactory := NewFactory(&Foo{})
+				require.Len(t, fooFactory.orderingAttrGens, fooFactory.numField)
+				fooAny, err := fooFactory.create(ctx, nil, nil)
+				foo, _ := fooAny.(*Foo)
+				for _, attr := range fooFactory.orderingAttrGens {
+					require.True(t, attr.isFilled)
+				}
+				require.Nil(t, err)
+				require.Empty(t, foo.Bar)
+			},
+		},
+		{
+			name:  "client defines ordering attr gen",
+			setUp: func(t *testing.T, ctx context.Context) {},
+			expect: func(t *testing.T, ctx context.Context) {
+				type Foo struct {
+					FooBar string
+					Bar    int
+				}
+				fooFactory := NewFactory(&Foo{}).
+					Attr("Bar", func(a Args) (any, error) {
+						return 0, nil
+					}).
+					Attr("FooBar", func(a Args) (any, error) {
+						return "foobar", nil
+					})
+				_, err := fooFactory.create(ctx, nil, nil)
+				require.Nil(t, err)
+				require.Equal(t, fooFactory.orderingAttrGens[0].key, "Bar")
+				require.Equal(t, fooFactory.orderingAttrGens[1].key, "FooBar")
+			},
+		},
+		{
+			name:  "client defines partial ordering attr gen",
+			setUp: func(t *testing.T, ctx context.Context) {},
+			expect: func(t *testing.T, ctx context.Context) {
+				type Foo struct {
+					FooBar string
+					Bar    int
+					BarFoo int
+				}
+				fooFactory := NewFactory(&Foo{}).
+					Attr("Bar", func(a Args) (any, error) {
+						return 0, nil
+					}).
+					Attr("FooBar", func(a Args) (any, error) {
+						return "foobar", nil
+					})
+				_, err := fooFactory.create(ctx, nil, nil)
+				require.Nil(t, err)
+				require.Equal(t, fooFactory.orderingAttrGens[0].key, "Bar")
+				require.Equal(t, fooFactory.orderingAttrGens[1].key, "FooBar")
+				require.Equal(t, fooFactory.orderingAttrGens[2].key, "BarFoo")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			tt.setUp(t, ctx)
+			tt.expect(t, ctx)
+		})
+	}
+}
+
+func TestFormatter(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name   string
+		setUp  func(*testing.T, context.Context)
+		expect func(*testing.T, context.Context)
+	}{
+		{
+			name:  "subfactory with formatters",
+			setUp: func(t *testing.T, ctx context.Context) {},
+			expect: func(t *testing.T, ctx context.Context) {
+				type Bar struct {
+					ID int
+				}
+				type Foo struct {
+					BarID int
+				}
+				barFactory := NewFactory(&Bar{ID: 1})
+				fooFactory := NewFactory(&Foo{}).
+					SubFactory("BarID", barFactory, func(i any) (any, error) {
+						inst, ok := i.(*Bar)
+						if !ok {
+							return nil, fmt.Errorf("unexpected type %t", i)
+						}
+						return inst.ID, nil
+					})
+				fooAny, err := fooFactory.Create()
+				foo, ok := fooAny.(*Foo)
+				require.True(t, ok)
+				require.Nil(t, err)
+				require.Equal(t, foo.BarID, 1)
+			},
+		},
+		{
+			name:  "non-subfactory with formatters",
+			setUp: func(t *testing.T, ctx context.Context) {},
+			expect: func(t *testing.T, ctx context.Context) {
+				type Bar struct {
+					Foo string
+				}
+				barFactory := NewFactory(&Bar{}).
+					Attr("Foo", func(a Args) (any, error) {
+						return "foo", nil
+					}, func(i any) (any, error) {
+						inst, ok := i.(string)
+						if !ok {
+							return nil, fmt.Errorf("unexpected type %t", i)
+						}
+						return fmt.Sprintf("%sbar", inst), nil
+					})
+				barAny, err := barFactory.Create()
+				bar, ok := barAny.(*Bar)
+				require.True(t, ok)
+				require.Nil(t, err)
+				require.Equal(t, bar.Foo, "foobar")
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			tt.setUp(t, ctx)
+			tt.expect(t, ctx)
+		})
+	}
+}
+
+func TestFileWithDir(t *testing.T) {
+	t.Parallel()
+	type kitTest struct {
+		gen  func(*os.File) (any, error)
+		ctrl *gomock.Controller
+		args *MockArgs
+	}
+	tests := [...]struct {
+		name     string
+		setUp    func(*testing.T) *kitTest
+		expect   func(*testing.T, *kitTest)
+		tearDown func(*testing.T, *kitTest)
+	}{
+		{
+			name: "create unsuccess",
+			setUp: func(t *testing.T) *kitTest {
+				gen := func(f *os.File) (any, error) {
+					return f, errors.New("foo")
+				}
+				ctrl := gomock.NewController(t)
+				args := NewMockArgs(ctrl)
+				return &kitTest{
+					gen:  gen,
+					ctrl: ctrl,
+					args: args,
+				}
+			},
+			expect: func(t *testing.T, kt *kitTest) {
+				type foobar struct {
+					foo string
+				}
+				f := NewFactory(&foobar{})
+				f = f.FileWithDir("foo", "txt", "temp", kt.gen)
+				_, err := f.orderingAttrGens[0].genFunc(kt.args)
+				require.NotNil(t, err)
+			},
+			tearDown: func(t *testing.T, kt *kitTest) {
+				kt.ctrl.Finish()
+			},
+		},
+		{
+			name: "create success",
+			setUp: func(t *testing.T) *kitTest {
+				gen := func(f *os.File) (any, error) {
+					return f, nil
+				}
+				ctrl := gomock.NewController(t)
+				args := NewMockArgs(ctrl)
+				return &kitTest{
+					gen:  gen,
+					ctrl: ctrl,
+					args: args,
+				}
+			},
+			expect: func(t *testing.T, kt *kitTest) {
+				type foobar struct {
+					foo string
+				}
+				f := NewFactory(&foobar{})
+				f = f.FileWithDir("foo", "txt", "temp", kt.gen)
+				fn, err := f.orderingAttrGens[0].genFunc(kt.args)
+				require.Nil(t, err)
+				require.Contains(t, fn, ".txt")
+			},
+			tearDown: func(t *testing.T, kt *kitTest) {
+				kt.ctrl.Finish()
+			},
+		},
+		{
+			name: "clean",
+			setUp: func(t *testing.T) *kitTest {
+				gen := func(f *os.File) (any, error) {
+					return f, nil
+				}
+				ctrl := gomock.NewController(t)
+				args := NewMockArgs(ctrl)
+				return &kitTest{
+					gen:  gen,
+					ctrl: ctrl,
+					args: args,
+				}
+			},
+			expect: func(t *testing.T, kt *kitTest) {
+				type foobar struct {
+					foo string
+				}
+				f := NewFactory(&foobar{})
+				f = f.FileWithDir("foo", "txt", "temp", kt.gen)
+				fnAny, _ := f.orderingAttrGens[0].genFunc(kt.args)
+				fn, _ := fnAny.(string)
+				f.Clean()
+				err := os.Remove(fn)
+				require.NotNil(t, err)
+			},
+			tearDown: func(t *testing.T, kt *kitTest) {
+				kt.ctrl.Finish()
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			kt := tt.setUp(t)
+			tt.expect(t, kt)
+			tt.tearDown(t, kt)
+		})
 	}
 }

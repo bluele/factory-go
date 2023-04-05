@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/bluele/factory-go/factory"
+
+	"github.com/hyuti/factory-go/factory"
 )
 
 type Group struct {
@@ -16,15 +17,15 @@ type User struct {
 
 var UserFactory = factory.NewFactory(
 	&User{},
-).SeqInt("ID", func(n int) (interface{}, error) {
+).SeqInt("ID", func(n int) (any, error) {
 	return n, nil
 })
 
 func main() {
 	for i := 1; i <= 3; i++ {
-		user := UserFactory.MustCreateWithOption(map[string]interface{}{
+		user := UserFactory.MustCreateWithOption(map[string]any{
 			"Groups": []*Group{
-				&Group{i}, &Group{i + 1},
+				{i}, {i + 1},
 			},
 		}).(*User)
 		fmt.Println("ID:", user.ID)
