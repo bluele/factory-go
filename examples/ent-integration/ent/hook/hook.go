@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hyuti/factory-go/examples/integration-with-ent/ent"
+	"github.com/hyuti/factory-go/examples/ent-integration/ent"
 )
 
 // The BookFunc type is an adapter to allow the use of ordinary

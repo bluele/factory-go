@@ -8,8 +8,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/hyuti/factory-go/examples/integration-with-ent/ent/book"
-	"github.com/hyuti/factory-go/examples/integration-with-ent/ent/predicate"
+	"github.com/hyuti/factory-go/examples/ent-integration/ent/book"
+	"github.com/hyuti/factory-go/examples/ent-integration/ent/predicate"
 )
 
 // BookDelete is the builder for deleting a Book entity.

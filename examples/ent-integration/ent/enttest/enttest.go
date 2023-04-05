@@ -5,12 +5,12 @@ package enttest
 import (
 	"context"
 
-	"github.com/hyuti/factory-go/examples/integration-with-ent/ent"
+	"github.com/hyuti/factory-go/examples/ent-integration/ent"
 	// required by schema hooks.
-	_ "github.com/hyuti/factory-go/examples/integration-with-ent/ent/runtime"
+	_ "github.com/hyuti/factory-go/examples/ent-integration/ent/runtime"
 
 	"entgo.io/ent/dialect/sql/schema"
-	"github.com/hyuti/factory-go/examples/integration-with-ent/ent/migrate"
+	"github.com/hyuti/factory-go/examples/ent-integration/ent/migrate"
 )
 
 type (

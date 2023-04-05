@@ -8,8 +8,8 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/hyuti/factory-go/examples/integration-with-ent/ent/book"
-	"github.com/hyuti/factory-go/examples/integration-with-ent/ent/customer"
+	"github.com/hyuti/factory-go/examples/ent-integration/ent/book"
+	"github.com/hyuti/factory-go/examples/ent-integration/ent/customer"
 )
 
 // BookCreate is the builder for creating a Book entity.

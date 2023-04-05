@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/hyuti/factory-go/examples/integration-with-ent/ent/customer"
+	"github.com/hyuti/factory-go/examples/ent-integration/ent/customer"
 )
 
 // Customer is the model entity for the Customer schema.

@@ -11,8 +11,8 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/hyuti/factory-go/examples/integration-with-ent/ent/book"
-	"github.com/hyuti/factory-go/examples/integration-with-ent/ent/customer"
+	"github.com/hyuti/factory-go/examples/ent-integration/ent/book"
+	"github.com/hyuti/factory-go/examples/ent-integration/ent/customer"
 )
 
 // ent aliases to avoid import conflicts in user's code.

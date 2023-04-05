@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/hyuti/factory-go/examples/integration-with-ent/ent"
+	"github.com/hyuti/factory-go/examples/ent-integration/ent"
 )
 
 func main() {

@@ -123,6 +123,18 @@ func EmbedClient(ctx *context.Context, v *Client) {
 		*ctx = context.WithValue(*ctx, ClientCtxKey, v)
 	}
 }
+func OpenClient() (*Client, error) {
+	db, err := sql.Open("sqlite3", "file:ent?mode=memory&_fk=1")
+	if err != nil {
+		return nil, err
+	}
+	drv := entsql.OpenDB(dialect.SQLite, db)
+	return NewClient(Driver(drv)), nil
+}
+
+func New() (*Client, error) {
+	return OpenClient()
+}
 
 // All you have to do is define a ModelFactory, you don't need to pay attention to all stuff above. But it's nice for you if you give it a shot.
 // Also this example assumes you have ent installed. if not refer to https://github.com/ent/ent to get everything inplace
@@ -180,16 +192,4 @@ func MustBookFactory(opts ...Opt) IFactory[*Book] {
 	return &Factory[*Book]{
 		worker: BookFactory(opts...),
 	}
-}
-func OpenClient() (*Client, error) {
-	db, err := sql.Open("sqlite3", "file:ent?mode=memory&_fk=1")
-	if err != nil {
-		return nil, err
-	}
-	drv := entsql.OpenDB(dialect.SQLite, db)
-	return NewClient(Driver(drv)), nil
-}
-
-func New() (*Client, error) {
-	return OpenClient()
 }

@@ -11,9 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/hyuti/factory-go/examples/integration-with-ent/ent/book"
-	"github.com/hyuti/factory-go/examples/integration-with-ent/ent/customer"
-	"github.com/hyuti/factory-go/examples/integration-with-ent/ent/predicate"
+	"github.com/hyuti/factory-go/examples/ent-integration/ent/book"
+	"github.com/hyuti/factory-go/examples/ent-integration/ent/customer"
+	"github.com/hyuti/factory-go/examples/ent-integration/ent/predicate"
 )
 
 // CustomerQuery is the builder for querying Customer entities.

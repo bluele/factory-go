@@ -36,7 +36,7 @@ $ go get -u github.com/hyuti/factory-go/factory
 
 Here is a list of integration examples with some popular ORM libraries (Please pay atttention this is not an official integration):
 - [gorm](https://github.com/hyuti/factory-go/blob/master/examples/gorm_integration.go) (what is [gorm](https://github.com/jinzhu/gorm))
-- [ent](https://github.com/hyuti/factory-go/blob/master/examples/integration-with-ent/ent/factory.go) (what is [ent](https://github.com/ent/ent))
+- [ent](https://github.com/hyuti/factory-go/blob/master/examples/ent-integration/ent/factory.go) (what is [ent](https://github.com/ent/ent))
 
 # Contributors
 The [original repo](https://github.com/bluele/factory-go) of this project has not been actived for a long time, so this is a fork and maintained by me. Any contributions will be appreciated.

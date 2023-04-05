@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/hyuti/factory-go/examples/integration-with-ent/ent/book"
-	"github.com/hyuti/factory-go/examples/integration-with-ent/ent/customer"
+	"github.com/hyuti/factory-go/examples/ent-integration/ent/book"
+	"github.com/hyuti/factory-go/examples/ent-integration/ent/customer"
 )
 
 // Book is the model entity for the Book schema.

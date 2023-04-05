@@ -2,7 +2,7 @@
 
 package runtime
 
-// The schema-stitching logic is generated in github.com/hyuti/factory-go/examples/integration-with-ent/ent/runtime.go
+// The schema-stitching logic is generated in github.com/hyuti/factory-go/examples/ent-integration/ent/runtime.go
 
 const (
 	Version = "v0.11.10"                                        // Version of ent codegen.

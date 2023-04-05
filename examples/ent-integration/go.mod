@@ -1,4 +1,4 @@
-module github.com/hyuti/factory-go/examples/integration-with-ent
+module github.com/hyuti/factory-go/examples/ent-integration
 
 go 1.19
 
